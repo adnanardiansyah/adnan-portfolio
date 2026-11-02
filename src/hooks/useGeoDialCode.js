@@ -7,6 +7,7 @@ export function useGeoDialCode() {
   const [dialCode, setDialCode] = useState(null);
 
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_WHATSAPP_NUMBER) return;
     fetch("https://ipapi.co/json/", { cache: "force-cache" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {

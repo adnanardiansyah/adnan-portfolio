@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { assets } from "@/lib/assets";
+import ResumeLink from "@/components/ResumeLink";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import BlurText from "./BlurText";
-import { SECTION, HEADING, BIO, RESUME_URL, TECH, CREATIVE, EXPERIENCE } from "@/app/about/content";
+import { SECTION, HEADING, BIO, LINKEDIN_URL, TECH, CREATIVE, EXPERIENCE, EDUCATION } from "@/app/about/content";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,8 +63,8 @@ export default function About({ standalone = false }) {
       {standalone && (
         <div className="about-img absolute inset-0 z-0">
           <Image
-            src="/photo/about me.webp"
-            alt="Sarang"
+            src={assets.profile.src}
+            alt={assets.profile.isPlaceholder ? "Adnan Ardiansyah - portrait placeholder" : "Adnan Ardiansyah"}
             fill
             className="object-cover object-center"
             priority
@@ -76,7 +78,7 @@ export default function About({ standalone = false }) {
 
         {/* Left Bio */}
         <div className={`w-full lg:w-[55%] max-w-2xl flex flex-col ${standalone ? "ml-auto lg:pr-10 text-right items-end" : "mr-auto text-left items-start"}`}>
-          <p className="about-label text-[10px] text-[#ff6b1a] tracking-[0.5em] uppercase mb-6 font-medium">
+          <p className="about-label text-[10px] text-[#a78bfa] tracking-[0.5em] uppercase mb-6 font-medium">
             {SECTION.label}
           </p>
 
@@ -103,16 +105,17 @@ export default function About({ standalone = false }) {
 
           <div className={`about-p mt-6 ${standalone ? "flex justify-end" : "flex justify-start"}`}>
             <a
-              href={RESUME_URL}
+              href={LINKEDIN_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 border border-[#ff6b1a]/30 text-[#ff6b1a] text-xs font-bold uppercase tracking-widest rounded-full hover:bg-[#ff6b1a] hover:text-black transition-colors duration-300"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-[#a78bfa]/30 text-[#a78bfa] text-xs font-bold uppercase tracking-widest rounded-full hover:bg-[#a78bfa] hover:text-black transition-colors duration-300"
             >
-              View Resume
+              Connect on LinkedIn
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </a>
+            <ResumeLink />
           </div>
         </div>
 
@@ -123,11 +126,11 @@ export default function About({ standalone = false }) {
           <div className="flex flex-col gap-10 w-full">
             <div className="w-full">
               <p className={`about-p text-[10px] tracking-[0.4em] uppercase mb-6 ${standalone ? "text-left" : "text-right"}`}>
-                <span className="border-b border-white/30 pb-2 inline-block text-white/50">Tech I Work With</span>
+                <span className="border-b border-white/30 pb-2 inline-block text-white/50">Tech Stack / Exploration</span>
               </p>
               <div className={`flex gap-2 flex-wrap ${standalone ? "justify-start" : "justify-end"}`}>
                 {TECH.map((s) => (
-                  <span key={s.name} className="group about-skill px-4 py-2 flex items-center gap-2 border border-white/12 rounded-full text-[10px] text-white/35 tracking-widest uppercase transition-colors duration-300 hover:bg-white hover:text-[#ff6b1a] hover:border-white cursor-default">
+                  <span key={s.name} className="group about-skill px-4 py-2 flex items-center gap-2 border border-white/12 rounded-full text-[10px] text-white/35 tracking-widest uppercase transition-colors duration-300 hover:bg-white hover:text-[#a78bfa] hover:border-white cursor-default">
                     <s.icon className="w-3 h-3 transition-all duration-300 fill-transparent stroke-current stroke-[1.5px] group-hover:fill-current group-hover:stroke-transparent" />
                     {s.name}
                   </span>
@@ -137,11 +140,11 @@ export default function About({ standalone = false }) {
 
             <div className="w-full">
               <p className={`about-p text-[10px] tracking-[0.4em] uppercase mb-6 ${standalone ? "text-left" : "text-right"}`}>
-                <span className="border-b border-white/30 pb-2 inline-block text-white/50">Creative Tools</span>
+                <span className="border-b border-white/30 pb-2 inline-block text-white/50">Expertise</span>
               </p>
               <div className={`flex gap-2 flex-wrap ${standalone ? "justify-start" : "justify-end"}`}>
                 {CREATIVE.map((s) => (
-                  <span key={s.name} className="group about-skill px-4 py-2 flex items-center gap-2 border border-white/12 rounded-full text-[10px] text-white/35 tracking-widest uppercase transition-colors duration-300 hover:bg-white hover:text-[#ff6b1a] hover:border-white cursor-default">
+                  <span key={s.name} className="group about-skill px-4 py-2 flex items-center gap-2 border border-white/12 rounded-full text-[10px] text-white/35 tracking-widest uppercase transition-colors duration-300 hover:bg-white hover:text-[#a78bfa] hover:border-white cursor-default">
                     <s.icon className="w-3 h-3 transition-all duration-300 fill-transparent stroke-current stroke-[1.5px] group-hover:fill-current group-hover:stroke-transparent" />
                     {s.name}
                   </span>
@@ -160,6 +163,11 @@ export default function About({ standalone = false }) {
                     <p className="text-white/40 text-[10px] tracking-widest uppercase mt-1">{exp.period}</p>
                   </div>
                 ))}
+                <div className="about-skill mt-6">
+                  <p className="text-[10px] tracking-widest uppercase text-[#60a5fa] mb-3">Education</p>
+                  <p className="text-white/80 text-sm">{EDUCATION.degree}</p>
+                  <p className="text-white/50 text-xs mt-2">{EDUCATION.institution}</p>
+                </div>
               </div>
             </div>
           </div>

@@ -1,30 +1,24 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { supabase } from '@/lib/supabase';
-
-async function isAdmin() {
-  const store = await cookies();
-  const token = store.get('admin_token')?.value;
-  if (!token) return false;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jwtVerify(token, secret);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function PATCH(request, { params }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const body = await request.json();
-  const { data: review } = await supabase.from('reviews').update(body).eq('id', params.id).select().single();
-  return NextResponse.json(review);
-}
-
-export async function DELETE(_, { params }) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  await supabase.from('reviews').delete().eq('id', params.id);
-  return NextResponse.json({ success: true });
-}
+import { endpoint, json, requireAdmin, isAdmin, bodyJson, id, ApiError } from '@/lib/api';
+import { listReviews, getReviews, createReviews, updateReviews, deleteReviews } from '@/lib/repository';
+import { validateRecord, mapReview } from '@/lib/records';
+export const GET = endpoint(async (request, context) => {
+  const value = id((await context.params).id, true);
+  const all = await isAdmin();
+  const row = await getReviews(value, all);
+  if (!row) throw new ApiError(404, 'Not found');
+  return json(mapReview(row));
+});
+export const PATCH = endpoint(async (request, context) => {
+  await requireAdmin(request);
+  const value = id((await context.params).id, true);
+  const body = validateRecord('reviews', await bodyJson(request), true);
+  const row = await updateReviews(value, body);
+  if (!row) throw new ApiError(404, 'Not found');
+  return json(mapReview(row));
+});
+export const DELETE = endpoint(async (request, context) => {
+  await requireAdmin(request);
+  const value = id((await context.params).id, true);
+  if (!(await deleteReviews(value))) throw new ApiError(404, 'Not found');
+  return json({ success: true });
+});

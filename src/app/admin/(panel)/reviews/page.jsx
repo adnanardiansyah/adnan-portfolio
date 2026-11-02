@@ -60,7 +60,7 @@ export default function ReviewsAdmin() {
     value: form[key],
     onChange: (e) => setForm({ ...form, [key]: e.target.value }),
     className:
-      'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors',
+      'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#a78bfa]/50 transition-colors',
   });
 
   return (
@@ -72,7 +72,7 @@ export default function ReviewsAdmin() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-[#ff6b1a] text-black font-bold px-5 py-2.5 rounded-xl text-sm uppercase tracking-widest hover:bg-[#ff8c42] transition-colors"
+          className="bg-[#a78bfa] text-black font-bold px-5 py-2.5 rounded-xl text-sm uppercase tracking-widest hover:bg-[#60a5fa] transition-colors"
         >
           {showForm ? 'Cancel' : '+ Add Review'}
         </button>
@@ -88,7 +88,7 @@ export default function ReviewsAdmin() {
             <select
               value={form.rating}
               onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff6b1a]/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
             >
               {[5, 4, 3, 2, 1].map((n) => (
                 <option key={n} value={n} style={{ background: '#111' }}>{n} ★</option>
@@ -100,13 +100,13 @@ export default function ReviewsAdmin() {
             placeholder="Review content *"
             rows={4}
             {...field('content')}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors resize-none mb-4"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#a78bfa]/50 transition-colors resize-none mb-4"
           />
-          <input placeholder="Avatar URL (optional)" {...field('avatar')} className="mb-4 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors" />
+          <input placeholder="Avatar URL (optional)" {...field('avatar')} className="mb-4 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#a78bfa]/50 transition-colors" />
           <button
             type="submit"
             disabled={saving}
-            className="bg-[#ff6b1a] text-black font-bold px-6 py-2.5 rounded-xl text-sm uppercase tracking-widest hover:bg-[#ff8c42] transition-colors disabled:opacity-50"
+            className="bg-[#a78bfa] text-black font-bold px-6 py-2.5 rounded-xl text-sm uppercase tracking-widest hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save Review'}
           </button>
@@ -136,7 +136,7 @@ export default function ReviewsAdmin() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[#ff6b1a] text-xs">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                  <span className="text-[#a78bfa] text-xs">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
                   <button
                     onClick={() => toggle(r._id, r.approved)}
                     className={`text-xs px-3 py-1 rounded-full border transition-colors ${

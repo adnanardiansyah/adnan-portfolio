@@ -82,7 +82,7 @@ export default function AnalyticsAdmin() {
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Visits',   val: stats.totalVisits,           color: '#ff6b1a' },
+          { label: 'Total Visits',   val: stats.totalVisits,           color: '#a78bfa' },
           { label: "Today's Visits", val: stats.todayVisits,           color: '#38bdf8' },
           { label: 'Link Clicks',    val: stats.totalClicks,           color: '#a78bfa' },
           { label: 'Search Terms',   val: stats.topSearches?.length ?? 0, color: '#34d399' },
@@ -102,7 +102,7 @@ export default function AnalyticsAdmin() {
             <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
               <span className="text-white/40 text-xs">{v.count}</span>
               <div
-                className="w-full bg-[#ff6b1a] rounded-t-md transition-all"
+                className="w-full bg-[#a78bfa] rounded-t-md transition-all"
                 style={{ height: `${Math.max((v.count / maxDay) * 120, 4)}px` }}
               />
               <span className="text-white/25 text-[10px]">{v._id?.slice(5)}</span>
@@ -177,7 +177,7 @@ export default function AnalyticsAdmin() {
               <div key={i} className="flex items-center gap-4">
                 <span className="text-white/60 text-sm w-32 shrink-0">{v._id || '/'}</span>
                 <div className="flex-1 h-2 bg-white/5 rounded-full">
-                  <div className="h-full bg-[#ff6b1a] rounded-full" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-[#a78bfa] rounded-full" style={{ width: `${pct}%` }} />
                 </div>
                 <span className="text-white/30 text-xs w-20 text-right shrink-0">{v.count} ({pct}%)</span>
               </div>

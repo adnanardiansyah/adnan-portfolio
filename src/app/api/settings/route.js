@@ -1,38 +1,15 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { supabase } from '@/lib/supabase';
-
-async function isAdmin() {
-  const store = await cookies();
-  const token = store.get('admin_token')?.value;
-  if (!token) return false;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jwtVerify(token, secret);
-    return true;
-  } catch { return false; }
-}
-
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const key = searchParams.get('key');
-  let query = supabase.from('settings').select('*');
-  if (key) query = query.eq('key', key).single();
-  const { data } = await query;
-  return NextResponse.json(data || null);
-}
-
-export async function PATCH(request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const { key, value } = await request.json();
-  const { data, error } = await supabase
-    .from('settings')
-    .upsert({ key, value }, { onConflict: 'key' })
-    .select()
-    .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
-}
+import { queryDatabase as sql } from '@/lib/neon';
+import { endpoint, json, requireAdmin, bodyJson, ApiError } from '@/lib/api';
+import { validateSettings } from '@/lib/records';
+export const GET = endpoint(async request => {
+  const key = new URL(request.url).searchParams.get('key');
+  if (key && !['social_links', 'coming_soon'].includes(key)) throw new ApiError(404, 'Not found');
+  const rows = await sql`SELECT key, value FROM portfolio.settings WHERE key IN ('social_links', 'coming_soon') AND (${key}::text IS NULL OR key = ${key})`;
+  return json(key ? rows[0] || null : rows);
+});
+export const PATCH = endpoint(async request => {
+  await requireAdmin(request);
+  const { key, value } = validateSettings(await bodyJson(request, 20000));
+  const rows = await sql`INSERT INTO portfolio.settings (key, value) VALUES (${key}, ${JSON.stringify(value)}::jsonb) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value RETURNING key, value`;
+  return json(rows[0]);
+});

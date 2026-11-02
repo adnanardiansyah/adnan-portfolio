@@ -23,7 +23,7 @@ const SOURCE_COLORS = {
   // AI tools
   'ChatGPT':     { bg: 'bg-emerald-500/15', text: 'text-emerald-400', dot: 'bg-emerald-400' },
   'Gemini':      { bg: 'bg-violet-500/15',  text: 'text-violet-400',  dot: 'bg-violet-400'  },
-  'Claude':      { bg: 'bg-[#ff6b1a]/15',   text: 'text-[#ff6b1a]',  dot: 'bg-[#ff6b1a]'  },
+  'Claude':      { bg: 'bg-[#a78bfa]/15',   text: 'text-[#a78bfa]',  dot: 'bg-[#a78bfa]'  },
   'Perplexity':  { bg: 'bg-cyan-500/15',    text: 'text-cyan-400',    dot: 'bg-cyan-400'    },
   'Copilot':     { bg: 'bg-blue-400/15',    text: 'text-blue-300',    dot: 'bg-blue-300'    },
   'Grok':        { bg: 'bg-white/8',        text: 'text-white/60',    dot: 'bg-white/40'    },
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
           disabled={csToggling}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
             comingSoon
-              ? 'bg-[#ff6b1a]/15 text-[#ff6b1a] border border-[#ff6b1a]/30'
+              ? 'bg-[#a78bfa]/15 text-[#a78bfa] border border-[#a78bfa]/30'
               : 'bg-white/5 text-white/40 border border-white/10 hover:border-white/20'
           }`}
         >
@@ -236,7 +236,7 @@ export default function AdminDashboard() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-8">
-        <StatCard label="Total Visits"    value={s.totalVisits}    color="#ff6b1a" />
+        <StatCard label="Total Visits"    value={s.totalVisits}    color="#a78bfa" />
         <StatCard label="Today's Visits"  value={s.todayVisits}    color="#38bdf8" />
         <StatCard label="Link Clicks"     value={s.totalClicks}    color="#a78bfa" />
         <StatCard label="Reviews"         value={s.totalReviews}   color="#34d399" />
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
             <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
               <span className="text-white/40 text-[10px]">{v.count}</span>
               <div
-                className="w-full bg-[#ff6b1a] rounded-t-md transition-all"
+                className="w-full bg-[#a78bfa] rounded-t-md transition-all"
                 style={{ height: `${Math.max((v.count / maxDay) * 96, 4)}px` }}
               />
               <span className="text-white/25 text-[9px]">{v._id?.slice(5)}</span>
@@ -354,7 +354,7 @@ export default function AdminDashboard() {
             {s.topSearches?.length ? s.topSearches.slice(0, 8).map((q, i) => (
               <div key={i} className="flex items-center justify-between">
                 <span className="text-white/60 text-sm truncate">{q.query}</span>
-                <span className="text-[#ff6b1a] text-sm font-medium ml-2 shrink-0">{q.count}</span>
+                <span className="text-[#a78bfa] text-sm font-medium ml-2 shrink-0">{q.count}</span>
               </div>
             )) : <p className="text-white/20 text-sm">No searches yet</p>}
           </div>
@@ -370,7 +370,7 @@ export default function AdminDashboard() {
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-white/60 text-xs w-20 shrink-0 truncate">{v._id || '/'}</span>
                   <div className="flex-1 h-1.5 bg-white/5 rounded-full">
-                    <div className="h-full bg-[#ff6b1a]/60 rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-[#a78bfa]/60 rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="text-white/30 text-xs w-8 text-right shrink-0">{v.count}</span>
                 </div>

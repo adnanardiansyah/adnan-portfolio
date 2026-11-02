@@ -1,68 +1,24 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { supabase } from '@/lib/supabase';
-
-async function isAdmin() {
-  const store = await cookies();
-  const token = store.get('admin_token')?.value;
-  if (!token) return false;
+import { endpoint, json, requireAdmin, isAdmin, bodyJson, id, ApiError } from '@/lib/api';
+import { listWorks, getWorks, createWorks, updateWorks, deleteWorks } from '@/lib/repository';
+import { validateRecord, mapWork } from '@/lib/records';
+import { projects, isRetiredProject } from '@/lib/profile';
+export const GET = endpoint(async request => {
+  const params = new URL(request.url).searchParams;
+  const all = params.get('all') === 'true';
+  if (all) await requireAdmin(request);
+  const category = params.get('category');
+  if (category && category.length > 100) throw new ApiError(400, 'Invalid category');
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jwtVerify(token, secret);
-    return true;
+    const rows = await listWorks(all, category && category !== 'All' ? category : null);
+    return json(rows.filter(row => !isRetiredProject(row)).map(mapWork), 200, { 'X-Portfolio-Source': 'neon' });
   } catch {
-    return false;
+    if (all) throw new Error();
+    return json(projects.filter(row => !category || category === 'All' || row.category === category), 200, { 'X-Portfolio-Source': 'fallback' });
   }
-}
-
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const admin = await isAdmin();
-  const category = searchParams.get('category');
-
-  let query = supabase
-    .from('works')
-    .select('*')
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: false });
-
-  if (!(searchParams.get('all') === 'true' && admin)) {
-    query = query.eq('visible', true);
-  }
-
-  if (category && category !== 'All') {
-    query = query.eq('category', category);
-  }
-
-  const { data: works, error } = await query;
-  if (error) {
-    console.error('[GET /api/works]', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json(works || []);
-}
-
-export async function POST(request) {
-  if (!(await isAdmin())) {
-    console.error('[POST /api/works] Unauthorized — no valid admin_token cookie');
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const body = await request.json();
-  console.log('[POST /api/works] Inserting:', body.title);
-
-  const { data: work, error } = await supabase
-    .from('works')
-    .insert([body])
-    .select()
-    .single();
-
-  if (error) {
-    console.error('[POST /api/works] Insert error:', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  console.log('[POST /api/works] Success, id:', work.id);
-  return NextResponse.json(work, { status: 201 });
-}
+});
+export const POST = endpoint(async request => {
+  await requireAdmin(request);
+  const body = validateRecord('works', await bodyJson(request));
+  const row = await createWorks(body);
+  return json(mapWork(row), 201);
+});

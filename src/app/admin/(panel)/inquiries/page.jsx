@@ -91,7 +91,7 @@ export default function InquiriesAdmin() {
         </div>
         <button
           onClick={() => openCompose('')}
-          className="bg-[#ff6b1a] text-black font-bold px-5 py-2.5 rounded-xl text-sm uppercase tracking-widest hover:bg-[#ff8c42] transition-colors"
+          className="bg-[#a78bfa] text-black font-bold px-5 py-2.5 rounded-xl text-sm uppercase tracking-widest hover:bg-[#60a5fa] transition-colors"
         >
           Compose Email
         </button>
@@ -116,7 +116,7 @@ export default function InquiriesAdmin() {
                 placeholder="To (e.g. hello@example.com)" 
                 value={emailForm.to}
                 onChange={(e) => setEmailForm({ ...emailForm, to: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff6b1a]/50"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#a78bfa]/50"
               />
               <input 
                 required
@@ -124,7 +124,7 @@ export default function InquiriesAdmin() {
                 placeholder="Subject" 
                 value={emailForm.subject}
                 onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff6b1a]/50"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#a78bfa]/50"
               />
               <textarea 
                 required
@@ -132,14 +132,14 @@ export default function InquiriesAdmin() {
                 placeholder="Message body..." 
                 value={emailForm.message}
                 onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff6b1a]/50 resize-none"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#a78bfa]/50 resize-none"
               />
               <div>
                 <label className="text-xs text-white/40 block mb-1">Attachment (Optional)</label>
                 <input 
                   type="file" 
                   onChange={(e) => setEmailFile(e.target.files[0] || null)}
-                  className="w-full text-white/50 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#ff6b1a]/10 file:text-[#ff6b1a] hover:file:bg-[#ff6b1a]/20 cursor-pointer"
+                  className="w-full text-white/50 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#a78bfa]/10 file:text-[#a78bfa] hover:file:bg-[#a78bfa]/20 cursor-pointer"
                 />
               </div>
 
@@ -152,7 +152,7 @@ export default function InquiriesAdmin() {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-[#ff6b1a] text-black font-bold py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-[#ff8c42] transition-colors disabled:opacity-50 mt-2"
+                className="w-full bg-[#a78bfa] text-black font-bold py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-[#60a5fa] transition-colors disabled:opacity-50 mt-2"
               >
                 {sending ? 'Sending...' : 'Send'}
               </button>
@@ -168,11 +168,11 @@ export default function InquiriesAdmin() {
       ) : (
         <div className="space-y-4">
           {inquiries.map((inq) => (
-            <div key={inq.id} className={`bg-[#111] border ${inq.read ? 'border-white/5 opacity-60' : 'border-[#ff6b1a]/30'} rounded-2xl p-6 transition-all`}>
+            <div key={inq.id} className={`bg-[#111] border ${inq.read ? 'border-white/5 opacity-60' : 'border-[#a78bfa]/30'} rounded-2xl p-6 transition-all`}>
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
                   <p className="text-white font-medium text-sm">{inq.name}</p>
-                  <a href={`mailto:${inq.email}`} className="text-[#ff6b1a] text-xs hover:underline mt-0.5 inline-block mr-3">
+                  <a href={`mailto:${inq.email}`} className="text-[#a78bfa] text-xs hover:underline mt-0.5 inline-block mr-3">
                     {inq.email}
                   </a>
                   <button onClick={() => openCompose(inq.email)} className="text-xs text-white/40 hover:text-white underline">
@@ -185,7 +185,7 @@ export default function InquiriesAdmin() {
                     className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                       inq.read
                         ? 'border-white/10 text-white/30 hover:border-white/30 hover:text-white'
-                        : 'border-[#ff6b1a]/30 text-[#ff6b1a] hover:bg-[#ff6b1a]/10'
+                        : 'border-[#a78bfa]/30 text-[#a78bfa] hover:bg-[#a78bfa]/10'
                     }`}
                   >
                     {inq.read ? 'Mark Unread' : 'Mark Read'}

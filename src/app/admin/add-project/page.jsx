@@ -1,8 +1,11 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiPlus, FiTrash2, FiUploadCloud, FiImage, FiLink, FiCheckCircle, FiStar, FiMonitor } from "react-icons/fi";
 import AdminNav from "@/components/admin/AdminNav";
+
+import { createImageBatch } from '@/lib/upload-images';
+import { IMAGE_ACCEPT } from '@/lib/image-policy';
 
 export default function AddProjectPage() {
   const [form, setForm] = useState({
@@ -25,6 +28,9 @@ export default function AddProjectPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const imageBatch = useRef(null);
+  if (!imageBatch.current) imageBatch.current = createImageBatch();
+  useEffect(() => () => imageBatch.current.reset(), []);
   const fileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
@@ -35,7 +41,7 @@ export default function AddProjectPage() {
   const handleAddImage = (e) => {
     const file = e.target.files[0];
     if (file && form.additionalImages.length < 10) {
-      const url = URL.createObjectURL(file);
+      let url; try { url = imageBatch.current.select(file); } catch (error) { alert(error.message); return; }
       setForm(prev => ({
         ...prev,
         additionalImages: [...prev.additionalImages, { file, url }]
@@ -46,7 +52,7 @@ export default function AddProjectPage() {
   const handleSingleImage = (e, field) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
+      let url; try { url = imageBatch.current.select(file); } catch (error) { alert(error.message); return; }
       setForm(prev => ({ ...prev, [field]: url, [`${field}_file`]: file }));
     }
   };
@@ -60,48 +66,26 @@ export default function AddProjectPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting || submitted) return;
     setIsSubmitting(true);
     try {
-      const uploadFile = async (file) => {
-        if (!file) return null;
-        const fd = new FormData();
-        fd.append('file', file);
-        const res = await fetch('/api/upload', { method: 'POST', body: fd });
-        const data = await res.json();
-        return data.url;
-      };
-
-      const image_url = form.mainImage_file ? await uploadFile(form.mainImage_file) : form.mainImageUrl;
-      const logo_full_view_url = form.logo_file ? await uploadFile(form.logo_file) : form.logo_full_view_url;
-      const desktop_view_url = form.desktop_file ? await uploadFile(form.desktop_file) : form.desktop_view_url;
-      const phone_view_url = form.phone_file ? await uploadFile(form.phone_file) : form.phone_view_url;
-      
-      const gallery = [];
-      for (const img of form.additionalImages) {
-        if (img.file) {
-          const url = await uploadFile(img.file);
-          if (url) gallery.push(url);
-        } else {
-          gallery.push(img.url);
-        }
-      }
-
+      const resolved = await imageBatch.current.resolveForm({ image_url: form.mainImageUrl, logo_full_view_url: form.logo_full_view_url, desktop_view_url: form.desktop_view_url, phone_view_url: form.phone_view_url, gallery: form.additionalImages.map(image => image.url) });
       const payload = {
         title: form.title,
         category: form.category || 'Website',
         tech: form.techStack,
         sort_order: parseInt(form.displayNumber) || 0,
         link: form.projectLink,
-        image_url,
+        image_url: resolved.image_url,
         description: form.description,
         review: form.review,
         client: form.client,
         month: form.month,
         year: form.year,
-        logo_full_view_url,
-        desktop_view_url,
-        phone_view_url,
-        gallery,
+        logo_full_view_url: resolved.logo_full_view_url,
+        desktop_view_url: resolved.desktop_view_url,
+        phone_view_url: resolved.phone_view_url,
+        gallery: resolved.gallery,
       };
 
       const res = await fetch('/api/works', {
@@ -118,7 +102,7 @@ export default function AddProjectPage() {
       }
 
       setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 3000);
+
       
     } catch (err) {
       console.error('[add-project] Submit error:', err);
@@ -151,7 +135,7 @@ export default function AddProjectPage() {
     techPlaceholder = "e.g. Photoshop · Illustrator";
   }
 
-  const inputClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-[#ff6b1a]/60 transition-all duration-300 text-sm";
+  const inputClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-[#a78bfa]/60 transition-all duration-300 text-sm";
   const labelClass = "text-[10px] text-white/40 tracking-[0.3em] uppercase mb-2 block font-medium";
 
   return (
@@ -191,7 +175,7 @@ export default function AddProjectPage() {
             {/* Core Details */}
             <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 md:p-10 space-y-8">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-[#ff6b1a]/10 flex items-center justify-center text-[#ff6b1a]">
+                <div className="w-8 h-8 rounded-lg bg-[#a78bfa]/10 flex items-center justify-center text-[#a78bfa]">
                   <FiMonitor size={16} />
                 </div>
                 <h2 className="text-lg font-bold tracking-tight">Core Details</h2>
@@ -336,13 +320,13 @@ export default function AddProjectPage() {
                 <span className="text-[9px] text-white/20 uppercase tracking-[0.2em]">Main Preview</span>
               </div>
 
-              <div className="group relative aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 transition-all hover:border-[#ff6b1a]/40 shadow-2xl cursor-pointer" onClick={() => !form.mainImageUrl && document.getElementById('main_upload').click()}>
+              <div className="group relative aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 transition-all hover:border-[#a78bfa]/40 shadow-2xl cursor-pointer" onClick={() => !form.mainImageUrl && document.getElementById('main_upload').click()}>
                 {form.mainImageUrl ? (
                   <>
                     <img src={form.mainImageUrl} className="w-full h-full object-cover opacity-80" alt="Main" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent pointer-events-none" />
                     <div className="absolute bottom-6 left-6 right-6 pointer-events-none">
-                      <p className="text-[10px] text-[#ff6b1a] italic font-medium mb-1">{form.techStack || "Tech Stack"}</p>
+                      <p className="text-[10px] text-[#a78bfa] italic font-medium mb-1">{form.techStack || "Tech Stack"}</p>
                       <h4 className="text-xl font-black tracking-tighter">{form.title || "Project Title"}</h4>
                     </div>
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -357,11 +341,11 @@ export default function AddProjectPage() {
                   </>
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white/[0.01]">
-                    <FiUploadCloud className="text-4xl text-white/10 mb-4 group-hover:text-[#ff6b1a] transition-colors" />
+                    <FiUploadCloud className="text-4xl text-white/10 mb-4 group-hover:text-[#a78bfa] transition-colors" />
                     <p className="text-[10px] text-white/30 uppercase tracking-[0.3em]">Tap to select image from gallery</p>
                   </div>
                 )}
-                <input type="file" id="main_upload" hidden accept="image/*" onChange={(e) => handleSingleImage(e, 'mainImageUrl')} />
+                <input type="file" id="main_upload" hidden accept={IMAGE_ACCEPT} onChange={(e) => handleSingleImage(e, 'mainImageUrl')} />
               </div>
 
               <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -372,7 +356,7 @@ export default function AddProjectPage() {
                   </div>
                   <div 
                     onClick={() => document.getElementById('logo_upload').click()}
-                    className="group relative aspect-video bg-white/5 rounded-xl overflow-hidden border border-dashed border-white/10 hover:border-[#ff6b1a]/30 cursor-pointer flex items-center justify-center transition-all"
+                    className="group relative aspect-video bg-white/5 rounded-xl overflow-hidden border border-dashed border-white/10 hover:border-[#a78bfa]/30 cursor-pointer flex items-center justify-center transition-all"
                   >
                     {form.logo_full_view_url ? (
                       <>
@@ -384,10 +368,10 @@ export default function AddProjectPage() {
                         </div>
                       </>
                     ) : (
-                      <FiPlus className="text-white/20 group-hover:text-[#ff6b1a] transition-colors" size={24} />
+                      <FiPlus className="text-white/20 group-hover:text-[#a78bfa] transition-colors" size={24} />
                     )}
                   </div>
-                  <input type="file" id="logo_upload" hidden accept="image/*" onChange={(e) => handleSingleImage(e, 'logo_full_view_url')} />
+                  <input type="file" id="logo_upload" hidden accept={IMAGE_ACCEPT} onChange={(e) => handleSingleImage(e, 'logo_full_view_url')} />
                 </div>
 
                 {/* Desktop Cover */}
@@ -397,7 +381,7 @@ export default function AddProjectPage() {
                   </div>
                   <div 
                     onClick={() => document.getElementById('desktop_upload').click()}
-                    className="group relative aspect-video bg-white/5 rounded-xl overflow-hidden border border-dashed border-white/10 hover:border-[#ff6b1a]/30 cursor-pointer flex items-center justify-center transition-all"
+                    className="group relative aspect-video bg-white/5 rounded-xl overflow-hidden border border-dashed border-white/10 hover:border-[#a78bfa]/30 cursor-pointer flex items-center justify-center transition-all"
                   >
                     {form.desktop_view_url ? (
                       <>
@@ -409,21 +393,21 @@ export default function AddProjectPage() {
                         </div>
                       </>
                     ) : (
-                      <FiPlus className="text-white/20 group-hover:text-[#ff6b1a] transition-colors" size={24} />
+                      <FiPlus className="text-white/20 group-hover:text-[#a78bfa] transition-colors" size={24} />
                     )}
                   </div>
-                  <input type="file" id="desktop_upload" hidden accept="image/*" onChange={(e) => handleSingleImage(e, 'desktop_view_url')} />
+                  <input type="file" id="desktop_upload" hidden accept={IMAGE_ACCEPT} onChange={(e) => handleSingleImage(e, 'desktop_view_url')} />
                 </div>
 
                 {/* Mobile Cover */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xs font-bold tracking-tight text-white/60">Mobile Cover</h3>
-                    <span className="text-[8px] text-[#ff6b1a] uppercase tracking-[0.2em] border border-[#ff6b1a]/30 px-1.5 py-0.5 rounded-full bg-[#ff6b1a]/5">9:16</span>
+                    <span className="text-[8px] text-[#a78bfa] uppercase tracking-[0.2em] border border-[#a78bfa]/30 px-1.5 py-0.5 rounded-full bg-[#a78bfa]/5">9:16</span>
                   </div>
                   <div 
                     onClick={() => document.getElementById('phone_upload').click()}
-                    className="group relative aspect-[9/16] w-2/3 mx-auto bg-white/5 rounded-xl overflow-hidden border border-dashed border-white/10 hover:border-[#ff6b1a]/30 cursor-pointer flex items-center justify-center transition-all"
+                    className="group relative aspect-[9/16] w-2/3 mx-auto bg-white/5 rounded-xl overflow-hidden border border-dashed border-white/10 hover:border-[#a78bfa]/30 cursor-pointer flex items-center justify-center transition-all"
                   >
                     {form.phone_view_url ? (
                       <>
@@ -435,10 +419,10 @@ export default function AddProjectPage() {
                         </div>
                       </>
                     ) : (
-                      <FiPlus className="text-white/20 group-hover:text-[#ff6b1a] transition-colors" size={24} />
+                      <FiPlus className="text-white/20 group-hover:text-[#a78bfa] transition-colors" size={24} />
                     )}
                   </div>
-                  <input type="file" id="phone_upload" hidden accept="image/*" onChange={(e) => handleSingleImage(e, 'phone_view_url')} />
+                  <input type="file" id="phone_upload" hidden accept={IMAGE_ACCEPT} onChange={(e) => handleSingleImage(e, 'phone_view_url')} />
                 </div>
               </div>
 
@@ -469,9 +453,9 @@ export default function AddProjectPage() {
                     <button 
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square bg-white/5 border border-dashed border-white/10 rounded-xl flex items-center justify-center hover:bg-white/10 hover:border-[#ff6b1a]/30 transition-all group"
+                      className="aspect-square bg-white/5 border border-dashed border-white/10 rounded-xl flex items-center justify-center hover:bg-white/10 hover:border-[#a78bfa]/30 transition-all group"
                     >
-                      <FiPlus className="text-white/20 group-hover:text-[#ff6b1a] transition-colors" size={20} />
+                      <FiPlus className="text-white/20 group-hover:text-[#a78bfa] transition-colors" size={20} />
                     </button>
                   )}
                 </div>
@@ -479,7 +463,7 @@ export default function AddProjectPage() {
                   type="file" 
                   hidden 
                   ref={fileInputRef} 
-                  accept="image/*"
+                  accept={IMAGE_ACCEPT}
                   onChange={handleAddImage}
                 />
               </div>
@@ -493,7 +477,7 @@ export default function AddProjectPage() {
                 className={`w-full py-6 rounded-3xl font-black text-sm uppercase tracking-[0.4em] transition-all duration-500 shadow-2xl flex items-center justify-center gap-4 ${
                   submitted 
                     ? "bg-green-500 text-white" 
-                    : "bg-[#ff6b1a] text-black hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_20px_40px_rgba(255,107,26,0.3)]"
+                    : "bg-[#a78bfa] text-black hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_20px_40px_rgba(167,139,250,0.3)]"
                 } disabled:opacity-70 disabled:cursor-not-allowed`}
               >
                 {isSubmitting ? (

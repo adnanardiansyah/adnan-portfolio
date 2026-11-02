@@ -6,7 +6,7 @@ import { useGeoDialCode } from "@/hooks/useGeoDialCode";
 import GradientBlinds from "@/components/GradientBlinds";
 
 const boxInput =
-  "cp-field w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-[#ff6b1a]/60 transition-colors duration-300 text-sm";
+  "cp-field w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-[#a78bfa]/60 transition-colors duration-300 text-sm";
 
 export default function ContactPage() {
   const ref = useRef(null);
@@ -33,10 +33,11 @@ export default function ContactPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (contactType === "phone") {
+      if (!process.env.NEXT_PUBLIC_WHATSAPP_NUMBER) { setStatus("error"); return; }
       const fullNumber = selectedCC.code + phoneNumber;
-      const myNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919999999999";
+      const myNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
       const msg = encodeURIComponent(
-        `Hi Sarang! My name is ${form.name}.\n\nReason: ${form.reason}\n\nMy number: +${fullNumber}`
+        `Hi Adnan Ardiansyah! My name is ${form.name}.\n\nReason: ${form.reason}\n\nMy number: +${fullNumber}`
       );
       window.open(`https://wa.me/${myNumber}?text=${msg}`, "_blank");
       return;
@@ -59,11 +60,11 @@ export default function ContactPage() {
         setErrorMsg(data.error || "Too many messages today. Try again tomorrow.");
       } else {
         setStatus("error");
-        setErrorMsg("Something went wrong. Please try again.");
+        setErrorMsg("Form belum tersedia. Hubungi Adnan melalui LinkedIn.");
       }
     } catch {
       setStatus("error");
-      setErrorMsg("Something went wrong. Please try again.");
+      setErrorMsg("Form belum tersedia. Hubungi Adnan melalui LinkedIn.");
     }
   };
 
@@ -84,7 +85,7 @@ export default function ContactPage() {
     >
       <div className="absolute inset-0 z-0 pointer-events-none opacity-30">
         <GradientBlinds
-          gradientColors={['#000000', '#ff6b1a', '#111111']}
+          gradientColors={['#090811', '#a78bfa', '#38bdf8', '#090811']}
           angle={45}
           noise={0.2}
           blindCount={12}
@@ -96,7 +97,7 @@ export default function ContactPage() {
         />
       </div>
 
-      <p className="cp-label relative z-10 text-[10px] text-[#ff6b1a] tracking-[0.5em] uppercase mb-8 md:mb-12 font-semibold">
+      <p className="cp-label relative z-10 text-[10px] text-[#a78bfa] tracking-[0.5em] uppercase mb-8 md:mb-12 font-semibold">
         {SECTION.label}
       </p>
 
@@ -106,7 +107,7 @@ export default function ContactPage() {
           className="cp-heading font-black tracking-tighter leading-[0.88]"
           style={{ fontSize: "clamp(2.8rem, 12vw, 4rem)" }}
         >
-          <span className="block text-white">Let's build</span>
+          <span className="block text-white">Let&apos;s build</span>
           <span className="block text-white">something</span>
           <span className="block ghost-orange">cool.</span>
         </h1>
@@ -116,6 +117,8 @@ export default function ContactPage() {
 
         {/* LEFT — Form */}
         <div className="w-full md:w-[42%] pr-0 md:pr-12">
+          <a className="inline-flex text-[#60a5fa] text-sm mb-6 underline underline-offset-4" href="https://www.linkedin.com/in/adnanardiansyah/" target="_blank" rel="noopener noreferrer">Connect on LinkedIn ↗</a>
+          <a className="inline-flex text-white/60 text-sm mb-6 ml-5 underline underline-offset-4 hover:text-[#a78bfa] transition-colors" href="https://github.com/adnanardiansyah" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5" aria-label="Contact form">
 
             <div className="flex flex-col gap-1.5">
@@ -137,7 +140,7 @@ export default function ContactPage() {
                 type="button"
                 onClick={() => setContactType("email")}
                 className={`flex-1 py-2 rounded-lg text-[10px] tracking-[0.2em] uppercase font-medium transition-all duration-200 ${
-                  contactType === "email" ? "bg-[#ff6b1a] text-black" : "bg-white/5 text-white/60 hover:bg-white/10"
+                  contactType === "email" ? "bg-[#a78bfa] text-black" : "bg-white/5 text-white/60 hover:bg-white/10"
                 }`}
               >
                 Email
@@ -145,7 +148,7 @@ export default function ContactPage() {
               <button
                 suppressHydrationWarning
                 type="button"
-                onClick={() => setContactType("phone")}
+                disabled={!process.env.NEXT_PUBLIC_WHATSAPP_NUMBER} onClick={() => setContactType("phone")}
                 className={`flex-1 py-2 rounded-lg text-[10px] tracking-[0.2em] uppercase font-medium transition-all duration-200 ${
                   contactType === "phone" ? "bg-[#25D366] text-black" : "bg-white/5 text-white/60 hover:bg-white/10"
                 }`}
@@ -229,12 +232,12 @@ export default function ContactPage() {
             </div>
 
             {status === "error" && (
-              <p className="text-red-400 text-sm">{errorMsg || "Something went wrong. Please try again."}</p>
+              <p className="text-red-400 text-sm">{errorMsg || "Form belum tersedia. Hubungi Adnan melalui LinkedIn."}</p>
             )}
 
             {status === "sent" ? (
-              <p className="cp-btn text-[#ff6b1a] text-sm uppercase tracking-widest font-bold">
-                Message sent — I'll be in touch!
+              <p className="cp-btn text-[#a78bfa] text-sm uppercase tracking-widest font-bold">
+                Message sent — I&apos;ll be in touch!
               </p>
             ) : (
               <button
@@ -244,7 +247,7 @@ export default function ContactPage() {
                 className={`cp-btn w-full font-bold py-4 rounded-full text-sm uppercase tracking-widest transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed ${
                   contactType === "phone"
                     ? "bg-[#25D366] text-black hover:bg-[#1ebe5d]"
-                    : "bg-[#ff6b1a] text-black hover:bg-[#ff8c42]"
+                    : "bg-[#a78bfa] text-black hover:bg-[#60a5fa]"
                 }`}
               >
                 {status === "sending" ? "Sending…" : contactType === "phone" ? "Open WhatsApp →" : "Send Message"}
@@ -262,12 +265,12 @@ export default function ContactPage() {
             className="cp-heading font-black tracking-tighter leading-[0.88]"
             style={{ fontSize: "clamp(2.6rem, 5.5vw, 6.5rem)" }}
           >
-            <span className="block text-white">Let's build</span>
+            <span className="block text-white">Let&apos;s build</span>
             <span className="block text-white">something</span>
             <span className="block ghost-orange">cool.</span>
           </h1>
           <p className="cp-label mt-6 text-white/20 text-sm font-light leading-relaxed text-right">
-            Got a project in mind?<br />Drop your details and I'll get back to you.
+            Got a project in mind?<br />Drop your details and I&apos;ll get back to you.
           </p>
         </div>
 

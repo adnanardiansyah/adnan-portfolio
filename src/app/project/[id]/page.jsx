@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import gsap from "gsap";
 import PageShell from "../../../components/PageShell";
+import { isRetiredProject } from '@/lib/profile';
 
 function safeUrl(url) {
   if (!url) return url;
@@ -18,13 +19,14 @@ export default function ProjectPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/works/${id}`)
+    if (isRetiredProject({id})) { setNotFound(true); setLoading(false); return; }
+    fetch(`/api/works/${encodeURIComponent(id)}`, { cache: 'no-store' })
       .then((r) => {
         if (r.status === 404) { setNotFound(true); setLoading(false); return null; }
         return r.json();
       })
       .then((data) => {
-        if (data && !data.error) {
+        if (data && !data.error && !isRetiredProject(data)) {
           setProject(data);
           setLoading(false);
         } else {
@@ -71,14 +73,14 @@ export default function ProjectPage() {
 
         {loading && (
           <div className="flex items-center justify-center min-h-screen">
-            <div className="w-6 h-6 border-2 border-white/20 border-t-[#ff6b1a] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-white/20 border-t-[#a78bfa] rounded-full animate-spin" />
           </div>
         )}
 
         {notFound && (
           <div className="flex flex-col items-center justify-center min-h-screen gap-6">
             <p className="text-white/20 text-sm tracking-widest uppercase">Project not found</p>
-            <Link href="/projects" className="text-[#ff6b1a] text-[11px] tracking-[0.4em] uppercase hover:opacity-70 transition-opacity">
+            <Link href="/projects" className="text-[#a78bfa] text-[11px] tracking-[0.4em] uppercase hover:opacity-70 transition-opacity">
               Back to projects
             </Link>
           </div>
@@ -97,7 +99,8 @@ export default function ProjectPage() {
                     <img
                       src={project.image_url || project.mobile_image_url}
                       alt={project.title}
-                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={event => { event.currentTarget.style.display = 'none'; }}
+                      className={`absolute inset-0 w-full h-full bg-[#0b0c14] ${project.imageFit === 'contain' ? 'object-contain' : 'object-cover object-top'}`}
                     />
                   </picture>
                 )
@@ -112,8 +115,8 @@ export default function ProjectPage() {
               <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-10 md:pb-14">
                 <div className="proj-hero-text">
                   {project.category && (
-                    <span className="inline-block text-[10px] text-[#ff6b1a] tracking-[0.5em] uppercase font-medium mb-3 border border-[#ff6b1a]/30 px-3 py-1 rounded-full">
-                      {project.category}
+                    <span className="inline-block text-[10px] text-[#a78bfa] tracking-[0.5em] uppercase font-medium mb-3 border border-[#a78bfa]/30 px-3 py-1 rounded-full">
+                      {project.categoryLabel || project.category}
                     </span>
                   )}
                   <h1
@@ -150,16 +153,17 @@ export default function ProjectPage() {
                 <div>
                   {project.description && (
                     <>
-                      <h2 className="font-black text-xl text-white mb-5 tracking-tight">The Challenge</h2>
+                      <h2 className="font-black text-xl text-white mb-5 tracking-tight">Project overview</h2>
                       <p className="text-white/55 text-base md:text-lg font-light leading-relaxed mb-12">
                         {project.description}
                       </p>
+                      {(project.imageIsPlaceholder || project.image_url?.endsWith('/placeholder.svg')) && <p className="text-[10px] uppercase tracking-widest text-[#a78bfa]/70 mb-10">Preview image placeholder · screenshot pending</p>}
                     </>
                   )}
 
                   {project.review && (
-                    <blockquote className="border-l-2 border-[#ff6b1a]/40 pl-6 mb-12">
-                      <p className="text-white/50 italic text-base leading-relaxed font-serif">"{project.review}"</p>
+                    <blockquote className="border-l-2 border-[#a78bfa]/40 pl-6 mb-12">
+                      <p className="text-white/50 italic text-base leading-relaxed font-serif">&quot;{project.review}&quot;</p>
                     </blockquote>
                   )}
                   {/* Responsive Previews */}
@@ -184,10 +188,11 @@ export default function ProjectPage() {
                   {/* Gallery */}
                   {gallery && gallery.length > 0 && (
                     <div>
-                      <h2 className="font-black text-xl text-white mb-6 tracking-tight">Gallery</h2>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <h2 className="font-black text-xl text-white mb-3 tracking-tight">{project.galleryLayout === 'mobile' ? 'Mobile screenshots' : 'Project screenshots'}</h2>
+                      <p className="text-white/45 text-sm mb-6">Open a screenshot to view the original image.</p>
+                      <div data-project-gallery className={project.galleryLayout === 'mobile' ? 'grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-3 gap-4 items-start' : 'grid grid-cols-1 gap-5'}>
                         {gallery.map((url, i) => (
-                          <div key={i} className="aspect-video rounded-xl overflow-hidden bg-white/5">
+                          <figure key={i} className="min-w-0 rounded-2xl overflow-hidden bg-[#10111b] border border-white/10">
                             {url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') ? (
                               <video
                                 src={url}
@@ -195,13 +200,15 @@ export default function ProjectPage() {
                                 muted loop playsInline autoPlay
                               />
                             ) : (
-                              <img
+                              <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${project.title} screenshot ${i + 1}`}><img
                                 src={url}
-                                alt={`${project.title} ${i + 1}`}
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-zoom-in"
-                              />
+                                alt={`${project.title} ${project.galleryLayout === 'mobile' ? 'mobile ' : ''}screenshot ${i + 1}`}
+                                loading="lazy"
+                                className="block w-full h-auto cursor-zoom-in"
+                              /></a>
                             )}
-                          </div>
+                            <figcaption className="px-4 py-3 text-[9px] uppercase tracking-[0.18em] text-white/50">{project.galleryLayout === 'mobile' ? 'Mobile' : 'Website'} · {String(i + 1).padStart(2,'0')}</figcaption>
+                          </figure>
                         ))}
                       </div>
                     </div>
@@ -230,7 +237,7 @@ export default function ProjectPage() {
                     {project.category && (
                       <div>
                         <p className="text-[9px] text-white/30 tracking-[0.4em] uppercase mb-1.5">Category</p>
-                        <p className="text-white/70 text-sm">{project.category}</p>
+                        <p className="text-white/70 text-sm">{project.categoryLabel || project.category}</p>
                       </div>
                     )}
 
@@ -240,7 +247,7 @@ export default function ProjectPage() {
                         <ul className="flex flex-col gap-1.5">
                           {services.map((s) => (
                             <li key={s} className="flex items-center gap-2 text-white/60 text-sm">
-                              <span className="w-1 h-1 rounded-full bg-[#ff6b1a] shrink-0" />
+                              <span className="w-1 h-1 rounded-full bg-[#a78bfa] shrink-0" />
                               {s}
                             </li>
                           ))}
@@ -253,14 +260,15 @@ export default function ProjectPage() {
                         href={safeUrl(project.link)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-2 w-full flex items-center justify-center gap-2 bg-[#ff6b1a] text-black font-bold py-3 rounded-xl text-[11px] uppercase tracking-widest hover:bg-[#ff8c42] transition-colors duration-300"
+                        className="mt-2 w-full flex items-center justify-center gap-2 bg-[#a78bfa] text-black font-bold py-3 rounded-xl text-[11px] uppercase tracking-widest hover:bg-[#60a5fa] transition-colors duration-300"
                       >
-                        View Live
+                        {project.linkLabel || 'Visit website'}
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                           <path d="M2 8L8 2M8 2H4M8 2v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
                         </svg>
                       </a>
                     )}
+                    {!project.link && <p className="text-white/45 text-xs leading-relaxed">A public demo has not been shared yet.</p>}
                   </div>
                 </div>
 
@@ -269,17 +277,17 @@ export default function ProjectPage() {
 
             {/* ── CTA ── */}
             <div className="border-t border-white/5 py-24 px-6 md:px-16 text-center">
-              <p className="text-[10px] text-[#ff6b1a] tracking-[0.5em] uppercase mb-5 font-medium">Start Your Journey</p>
+              <p className="text-[10px] text-[#a78bfa] tracking-[0.5em] uppercase mb-5 font-medium">Code · Intelligence · Connection</p>
               <h2 className="font-black tracking-tighter leading-[0.9] mb-8 text-white" style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)" }}>
-                Ready to Elevate<br />
-                <span className="ghost-orange italic font-serif">Your Brand Presence?</span>
+                Have an idea<br />
+                <span className="ghost-orange italic font-serif">to explore?</span>
               </h2>
               <p className="text-white/30 text-sm font-light mb-10 max-w-md mx-auto leading-relaxed">
-                From concept to completion, let's build something visually stunning and smooth to use.
+                Let&apos;s talk about web development, intelligent systems, and the infrastructure that connects them.
               </p>
               <Link
                 href="/#contact-section"
-                className="inline-flex items-center gap-3 bg-[#ff6b1a] text-black font-black px-8 py-4 rounded-full text-[11px] uppercase tracking-[0.25em] hover:bg-[#ff8c42] transition-colors duration-300"
+                className="inline-flex items-center gap-3 bg-[#a78bfa] text-black font-black px-8 py-4 rounded-full text-[11px] uppercase tracking-[0.25em] hover:bg-[#60a5fa] transition-colors duration-300"
               >
                 Get In Touch
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

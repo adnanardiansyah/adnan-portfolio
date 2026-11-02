@@ -51,7 +51,7 @@ export default function AdminSettings() {
       <div className="bg-[#111] border border-white/5 rounded-2xl p-6">
         <h2 className="text-white font-bold text-base mb-1">Change Password</h2>
         <p className="text-white/30 text-xs mb-5">
-          After changing, update <code className="text-[#ff6b1a] bg-white/5 px-1.5 py-0.5 rounded">ADMIN_PASSWORD</code> in your <code className="text-[#ff6b1a] bg-white/5 px-1.5 py-0.5 rounded">.env.local</code> file and redeploy.
+          After changing, update <code className="text-[#a78bfa] bg-white/5 px-1.5 py-0.5 rounded">ADMIN_PASSWORD</code> in your <code className="text-[#a78bfa] bg-white/5 px-1.5 py-0.5 rounded">.env.local</code> file and redeploy.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -63,7 +63,7 @@ export default function AdminSettings() {
               onChange={(e) => setCurrent(e.target.value)}
               required
               placeholder="Enter current password"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
             />
           </div>
 
@@ -75,7 +75,7 @@ export default function AdminSettings() {
               onChange={(e) => setNewPass(e.target.value)}
               required
               placeholder="Min. 8 characters"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
             />
           </div>
 
@@ -87,7 +87,7 @@ export default function AdminSettings() {
               onChange={(e) => setConfirm(e.target.value)}
               required
               placeholder="Repeat new password"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
             />
           </div>
 
@@ -98,8 +98,8 @@ export default function AdminSettings() {
           )}
 
           {status === 'success' && newValue && (
-            <div className="bg-[#ff6b1a]/10 border border-[#ff6b1a]/20 rounded-xl px-4 py-3">
-              <p className="text-[10px] text-[#ff6b1a] tracking-widest uppercase mb-2">Set this in .env.local</p>
+            <div className="bg-[#a78bfa]/10 border border-[#a78bfa]/20 rounded-xl px-4 py-3">
+              <p className="text-[10px] text-[#a78bfa] tracking-widest uppercase mb-2">Set this in .env.local</p>
               <code className="text-white font-mono text-sm break-all">ADMIN_PASSWORD={newValue}</code>
             </div>
           )}
@@ -107,7 +107,7 @@ export default function AdminSettings() {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full bg-[#ff6b1a] text-black font-bold py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-[#ff8c42] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+            className="w-full bg-[#a78bfa] text-black font-bold py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-[#60a5fa] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-1"
           >
             {status === 'loading' ? 'Verifying…' : 'Change Password'}
           </button>

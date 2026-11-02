@@ -1,49 +1,19 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { supabase } from '@/lib/supabase';
-
-async function isAdmin() {
-  const store = await cookies();
-  const token = store.get('admin_token')?.value;
-  if (!token) return false;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jwtVerify(token, secret);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const admin = await isAdmin();
-
-  let query = supabase
-    .from('projects')
-    .select('*')
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: false });
-
-  if (!(searchParams.get('all') === 'true' && admin)) {
-    query = query.eq('visible', true);
-  }
-
-  const { data: projects } = await query;
-  return NextResponse.json(projects || []);
-}
-
-export async function POST(request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const body = await request.json();
-  const { data: project, error } = await supabase
-    .from('projects')
-    .insert([body])
-    .select()
-    .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(project, { status: 201 });
-}
+import { isRetiredProject } from '@/lib/profile';
+import { endpoint, json, requireAdmin, isAdmin, bodyJson, id, ApiError } from '@/lib/api';
+import { listProjects, getProjects, createProjects, updateProjects, deleteProjects } from '@/lib/repository';
+import { validateRecord } from '@/lib/records';
+export const GET = endpoint(async request => {
+  const params = new URL(request.url).searchParams;
+  const all = params.get('all') === 'true';
+  if (all) await requireAdmin(request);
+  const category = params.get('category');
+  if (category && category.length > 100) throw new ApiError(400, 'Invalid category');
+  const rows = await listProjects(all, category && category !== 'All' ? category : null);
+  return json(rows.filter(row => !isRetiredProject(row)));
+});
+export const POST = endpoint(async request => {
+  await requireAdmin(request);
+  const body = validateRecord('projects', await bodyJson(request));
+  const row = await createProjects(body);
+  return json(row, 201);
+});

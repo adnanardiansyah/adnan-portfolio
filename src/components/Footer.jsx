@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { trackClick } from "@/lib/trackClick";
+import { profile } from "@/lib/profile";
+
+const PROFILE_SOCIALS = [{label:"GitHub",href:profile.github},{label:"LinkedIn",href:profile.linkedin}];
 
 const LINKS = [
   { label: "About",   href: "/about"   },
@@ -21,7 +24,7 @@ const SOCIAL_KEYS = [
 
 export default function Footer() {
   const ref = useRef(null);
-  const [socials, setSocials] = useState([]);
+  const [socials, setSocials] = useState(PROFILE_SOCIALS);
 
   useEffect(() => {
     fetch("/api/settings?key=social_links")
@@ -32,7 +35,7 @@ export default function Footer() {
           label: s.label,
           href:  data.value[s.key].trim(),
         }));
-        setSocials(active);
+        setSocials([...PROFILE_SOCIALS, ...active.filter(s => s.label !== 'GitHub' && s.label !== 'LinkedIn')]);
       })
       .catch(() => {});
   }, []);
@@ -68,14 +71,14 @@ export default function Footer() {
 
         {/* name + tagline */}
         <div>
-          <p className="text-[10px] text-[#ff6b1a] tracking-[0.5em] uppercase mb-4 font-medium">
-            Creative Developer
+          <p className="text-[10px] text-[#a78bfa] tracking-[0.5em] uppercase mb-4 font-medium">
+            Code · Intelligence · Connection
           </p>
           <h2
             className="font-black tracking-tighter leading-[0.85]"
-            style={{ fontSize: "clamp(3rem, 8vw, 7rem)" }}
+            style={{ fontSize: "clamp(2rem, 5vw, 5rem)" }}
           >
-            <span className="block text-white">Sarang</span>
+            <span className="block text-white">Adnan Ardiansyah</span>
           </h2>
         </div>
 
@@ -86,7 +89,7 @@ export default function Footer() {
               <Link
                 key={href}
                 href={href}
-                className="text-white/40 hover:text-[#ff6b1a] transition-colors duration-300"
+                className="text-white/40 hover:text-[#a78bfa] transition-colors duration-300"
               >
                 {label}
               </Link>
@@ -121,10 +124,10 @@ export default function Footer() {
           className="text-[10px] text-white/20 tracking-widest"
           style={{ fontFamily: '"Times New Roman", Times, serif', fontStyle: "italic" }}
         >
-          sarangwalle@gmail.com
+          Politeknik Negeri Lhokseumawe
         </p>
         <p className="text-[10px] text-white/15 tracking-[0.3em] uppercase">
-          © {new Date().getFullYear()} Sarang Walle. All rights reserved.
+          © {new Date().getFullYear()} Adnan Ardiansyah. All rights reserved.
         </p>
       </div>
 

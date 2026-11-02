@@ -3,44 +3,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiPlus, FiTrash2, FiImage, FiCheckCircle, FiEye, FiEyeOff, FiEdit3, FiX, FiExternalLink, FiSearch, FiMonitor } from "react-icons/fi";
 import gsap from 'gsap';
+import { createImageBatch } from '@/lib/upload-images';
+import { IMAGE_ACCEPT } from '@/lib/image-policy';
 const CATEGORIES = [
   "Website",
+  "App",
   "Designs",
   "Photos",
   "Videos"
 ];
-const convertToWebP = (file) => {
-  return new Promise((resolve, reject) => {
-    // If it's a video or non-image, just return the file as-is
-    if (!file.type.startsWith('image/')) {
-      return resolve(file);
-    }
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (e) => {
-      const img = new Image();
-      img.src = e.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-          if (!blob) return reject(new Error('Canvas empty'));
-          const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
-            type: "image/webp",
-            lastModified: Date.now(),
-          });
-          resolve(newFile);
-        }, 'image/webp', 0.9);
-      };
-      img.onerror = reject;
-    };
-    reader.onerror = reject;
-  });
-};
-
 const EMPTY = {
   title: '',
   description: '',
@@ -68,26 +39,28 @@ export default function ArchiveAdmin() {
   const [editing, setEditing]   = useState(null);
   const [form, setForm]         = useState(EMPTY);
   const [saving, setSaving]     = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [galleryUploading, setGalleryUploading] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const imageBatch = useRef(null);
+  if (!imageBatch.current) imageBatch.current = createImageBatch();
+  useEffect(() => () => imageBatch.current.reset(), []);
   const fileRef = useRef(null);
   const galleryFileRef = useRef(null);
   const router  = useRouter();
   const formRef = useRef(null);
 
   const load = () => {
-    fetch('/api/works?all=true')
+    fetch('/api/works?all=true', { cache: 'no-store' })
       .then(async (r) => {
         if (r.status === 401) { router.push('/admin/login'); return null; }
+        if (!r.ok) throw new Error('Unable to load projects. Please retry.');
         try { return await r.json(); } catch { return null; }
       })
       .then((data) => {
-        const sorted = (data || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        const sorted = (Array.isArray(data) ? data : []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         setWorks(sorted);
         setFiltered(sorted);
         setLoading(false);
-      });
+      }).catch(() => { setSaveError('Unable to load projects. Please retry.'); setLoading(false); });
   };
 
   useEffect(load, [router]);
@@ -102,6 +75,7 @@ export default function ArchiveAdmin() {
   }, [search, works]);
 
   const openAdd = () => {
+    imageBatch.current.reset();
     setEditing(null);
     setForm(EMPTY);
     setShowForm(true);
@@ -109,6 +83,7 @@ export default function ArchiveAdmin() {
   };
 
   const openEdit = (p) => {
+    imageBatch.current.reset();
     setEditing(p.id);
     setForm({
       title:       p.title       || '',
@@ -129,10 +104,11 @@ export default function ArchiveAdmin() {
     gsap.fromTo(formRef.current, { x: 400, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" });
   };
 
-  const closeForm = () => {
+  const closeForm = (force = false) => {
+    if (saving && force !== true) return;
     gsap.to(formRef.current, {
       x: 400, opacity: 0, duration: 0.4, ease: "power3.in",
-      onComplete: () => { setShowForm(false); setEditing(null); setForm(EMPTY); },
+      onComplete: () => { imageBatch.current.reset(); setShowForm(false); setEditing(null); setForm(EMPTY); },
     });
   };
 
@@ -143,92 +119,63 @@ export default function ArchiveAdmin() {
     const method = editing ? 'PATCH' : 'POST';
     const url    = editing ? `/api/works/${editing}` : '/api/works';
     try {
+      const resolved = await imageBatch.current.resolveForm(form);
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, sort_order: Number(form.sort_order) }),
+        body: JSON.stringify({ ...resolved, sort_order: Number(form.sort_order) }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setSaveError(data.error || `Server error ${res.status}`);
         return;
       }
-      closeForm();
+      closeForm(true);
       load();
-    } catch {
-      setSaveError('Network error — check your connection.');
+    } catch (error) {
+      setSaveError(error.message || 'Unable to upload or save. Please retry.');
     } finally {
       setSaving(false);
     }
   };
 
   const toggleVisible = async (id, visible) => {
-    await fetch(`/api/works/${id}`, {
+    const response = await fetch(`/api/works/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visible: !visible }),
     });
+    if (!response.ok) { alert((await response.json()).error || 'Unable to update project'); return; }
     load();
   };
 
   const remove = async (id) => {
     if (!confirm('Delete this item from the archive?')) return;
-    await fetch(`/api/works/${id}`, { method: 'DELETE' });
+    const response = await fetch(`/api/works/${id}`, { method: 'DELETE' });
+    if (!response.ok) { alert((await response.json()).error || 'Unable to delete project'); return; }
     load();
   };
 
-  const handleUpload = async (e) => {
+  const handleUpload = (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const webpFile = await convertToWebP(file);
-      const fd = new FormData();
-      fd.append('file', webpFile);
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.url) setForm(f => ({ ...f, image_url: data.url }));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+    if (!file || saving) return;
+    try { const preview = imageBatch.current.select(file); setForm(f => ({ ...f, image_url: preview })); setSaveError(''); }
+    catch (error) { setSaveError(error.message); }
+    e.target.value = '';
   };
-
-
-
-  const handleGalleryUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const remaining = MAX_GALLERY - (form.gallery?.length || 0);
-    const toUpload = files.slice(0, remaining);
-    if (!toUpload.length) return;
-    setGalleryUploading(true);
-    try {
-      const urls = await Promise.all(toUpload.map(async (file) => {
-        const webpFile = await convertToWebP(file);
-        const fd = new FormData();
-        fd.append('file', webpFile);
-        const res = await fetch('/api/upload', { method: 'POST', body: fd });
-        const data = await res.json();
-        return data.url || null;
-      }));
-      const valid = urls.filter(Boolean);
-      setForm(f => ({ ...f, gallery: [...(f.gallery || []), ...valid] }));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setGalleryUploading(false);
-      e.target.value = '';
-    }
+  const handleGalleryUpload = (e) => {
+    if (saving) return;
+    const files = Array.from(e.target.files || []).slice(0, MAX_GALLERY - (form.gallery?.length || 0));
+    try { const previews = files.map(file => imageBatch.current.select(file)); setForm(f => ({ ...f, gallery: [...(f.gallery || []), ...previews] })); setSaveError(''); }
+    catch (error) { setSaveError(error.message); }
+    e.target.value = '';
   };
 
   const removeGalleryImage = (idx) => {
     setForm(f => ({ ...f, gallery: f.gallery.filter((_, i) => i !== idx) }));
   };
 
-  const inp = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors";
+  const inp = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#a78bfa]/50 transition-colors";
   const lbl = "text-[10px] text-white/30 tracking-[0.3em] uppercase mb-2 block font-medium";
 
   return (
@@ -238,7 +185,7 @@ export default function ArchiveAdmin() {
         <div>
           <h1 className="text-white text-3xl font-black tracking-tight mb-2">Creative Archive</h1>
           <div className="flex items-center gap-4">
-            <span className="px-3 py-1 bg-[#ff6b1a]/10 text-[#ff6b1a] text-[10px] font-bold tracking-widest uppercase rounded-full border border-[#ff6b1a]/20">
+            <span className="px-3 py-1 bg-[#a78bfa]/10 text-[#a78bfa] text-[10px] font-bold tracking-widest uppercase rounded-full border border-[#a78bfa]/20">
               {works.length} Items
             </span>
             <div className="h-4 w-px bg-white/10" />
@@ -251,7 +198,7 @@ export default function ArchiveAdmin() {
           </div>
         </div>
         <button onClick={openAdd}
-          className="bg-[#ff6b1a] text-black font-black px-6 py-3.5 rounded-2xl text-[11px] uppercase tracking-[0.2em] hover:bg-[#ff8c42] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-[#ff6b1a]/10 flex items-center gap-2">
+          className="bg-[#a78bfa] text-black font-black px-6 py-3.5 rounded-2xl text-[11px] uppercase tracking-[0.2em] hover:bg-[#60a5fa] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-[#a78bfa]/10 flex items-center gap-2">
           <FiPlus size={16} />
           Add to Archive
         </button>
@@ -260,7 +207,7 @@ export default function ArchiveAdmin() {
       {/* Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-40">
-          <div className="animate-spin h-8 w-8 border-4 border-[#ff6b1a] border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-4 border-[#a78bfa] border-t-transparent rounded-full" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-40 bg-white/[0.02] border border-white/5 rounded-[2rem] border-dashed">
@@ -309,7 +256,7 @@ export default function ArchiveAdmin() {
               <div className="p-6">
                 <div className="mb-3">
                   <h3 className="text-white font-bold text-lg tracking-tight truncate mb-1">{p.title}</h3>
-                  <p className="text-[#ff6b1a] text-[10px] uppercase tracking-[0.2em] font-medium">{p.category || "—"}</p>
+                  <p className="text-[#a78bfa] text-[10px] uppercase tracking-[0.2em] font-medium">{p.category || "—"}</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-5">
                   {p.tech?.split('·').map((t, i) => (
@@ -464,7 +411,7 @@ export default function ArchiveAdmin() {
               <div className="pt-4 border-t border-white/5">
                 <div className="flex items-center justify-between mb-3">
                   <label className={lbl + " !mb-0"}>Cover / Hover Image</label>
-                  <span className="text-[8px] text-[#ff6b1a] uppercase tracking-[0.2em] border border-[#ff6b1a]/30 px-1.5 py-0.5 rounded-full bg-[#ff6b1a]/5">4:5</span>
+                  <span className="text-[8px] text-[#a78bfa] uppercase tracking-[0.2em] border border-[#a78bfa]/30 px-1.5 py-0.5 rounded-full bg-[#a78bfa]/5">Original ratio</span>
                 </div>
                 <div className="flex gap-4 flex-col md:flex-row">
                   {form.image_url && (
@@ -485,9 +432,9 @@ export default function ArchiveAdmin() {
                     <button type="button" onClick={() => fileRef.current.click()}
                       className="px-6 py-6 h-full bg-white/5 border border-white/10 border-dashed rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest font-bold w-full flex flex-col items-center justify-center gap-3">
                       <FiImage size={24} className="text-white/40" />
-                      {uploading ? "Uploading…" : form.category === "Videos" ? "Upload Cover/Video" : "Upload Cover Photo"}
+                      Select Cover Photo · JPEG/PNG/WebP · max 3 MiB
                     </button>
-                    <input ref={fileRef} type="file" hidden accept="image/*,video/*" onChange={handleUpload} />
+                    <input ref={fileRef} type="file" hidden accept={IMAGE_ACCEPT} onChange={handleUpload} />
                   </div>
                 </div>
               </div>
@@ -530,13 +477,13 @@ export default function ArchiveAdmin() {
                       className="w-full py-4 bg-white/5 border border-white/10 border-dashed rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest font-bold flex items-center justify-center gap-2"
                     >
                       <FiImage size={16} />
-                      {galleryUploading ? "Uploading…" : form.category === "Videos" ? "Add Videos to Gallery" : "Add Images to Gallery"}
+                      Add Images to Gallery · max 3 MiB each
                     </button>
                     <input
                       ref={galleryFileRef}
                       type="file"
                       hidden
-                      accept="image/*,video/*"
+                      accept={IMAGE_ACCEPT}
                       multiple
                       onChange={handleGalleryUpload}
                     />
@@ -572,7 +519,7 @@ export default function ArchiveAdmin() {
 
               <div className="flex gap-4 pt-4">
                 <button type="submit" disabled={saving}
-                  className="flex-1 bg-[#ff6b1a] text-black font-black py-4 rounded-2xl text-[11px] uppercase tracking-[0.2em] hover:bg-[#ff8c42] transition-all flex items-center justify-center gap-2">
+                  className="flex-1 bg-[#a78bfa] text-black font-black py-4 rounded-2xl text-[11px] uppercase tracking-[0.2em] hover:bg-[#60a5fa] transition-all flex items-center justify-center gap-2">
                   {saving ? 'Saving…' : editing ? 'Update' : 'Add to Archive'}
                   {!saving && <FiCheckCircle size={16} />}
                 </button>

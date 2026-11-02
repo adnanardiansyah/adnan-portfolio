@@ -75,7 +75,7 @@ export default function NewsletterPopup() {
         </button>
 
         <div className="mb-6">
-          <div className="w-12 h-12 bg-[#ff6b1a]/10 text-[#ff6b1a] rounded-xl flex items-center justify-center mb-4">
+          <div className="w-12 h-12 bg-[#a78bfa]/10 text-[#a78bfa] rounded-xl flex items-center justify-center mb-4">
             <FiMail size={24} />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Join the Newsletter</h2>
@@ -98,7 +98,7 @@ export default function NewsletterPopup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#ff6b1a] transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#a78bfa] transition-colors"
               />
             </div>
             
@@ -109,7 +109,7 @@ export default function NewsletterPopup() {
             <button
               type="submit"
               disabled={status === "loading"}
-              className="w-full py-3 bg-[#ff6b1a] text-black font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-[#a78bfa] text-black font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {status === "loading" ? "Subscribing..." : "Subscribe Now"}
             </button>

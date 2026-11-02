@@ -17,6 +17,9 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      ...(/^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/.test(process.env.BLOB_PUBLIC_HOSTNAME || '')
+        ? [{ protocol: 'https', hostname: process.env.BLOB_PUBLIC_HOSTNAME, pathname: '/portfolio/projects/**' }]
+        : []),
     ],
   },
 

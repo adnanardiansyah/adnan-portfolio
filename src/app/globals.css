@@ -6,7 +6,7 @@
 }
 
 :root {
-  --orange: #ff6b1a;
+  --orange: #a78bfa;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -59,7 +59,7 @@ html::-webkit-scrollbar { display: none; }
   font-style: italic;
   font-weight: 400;
   color: transparent;
-  -webkit-text-stroke: 1.2px #ff6b1a;
+  -webkit-text-stroke: 1.2px #a78bfa;
   letter-spacing: -0.01em;
 }
 
@@ -82,23 +82,23 @@ html::-webkit-scrollbar { display: none; }
 /* ── Custom slim scrollbar for dropdowns & panels ─────────────── */
 .custom-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 107, 26, 0.4) transparent;
+  scrollbar-color: rgba(167, 139, 250, 0.4) transparent;
 }
 .custom-scroll::-webkit-scrollbar { width: 4px; }
 .custom-scroll::-webkit-scrollbar-track { background: transparent; }
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 107, 26, 0.35);
+  background: rgba(167, 139, 250, 0.35);
   border-radius: 99px;
 }
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 107, 26, 0.65);
+  background: rgba(167, 139, 250, 0.65);
 }
 
 /* Admin panel scrollbar */
-.admin-cursor { scrollbar-width: thin; scrollbar-color: rgba(255,107,26,0.3) transparent; }
+.admin-cursor { scrollbar-width: thin; scrollbar-color: rgba(167,139,250,0.3) transparent; }
 .admin-cursor::-webkit-scrollbar { width: 4px; }
 .admin-cursor::-webkit-scrollbar-track { background: transparent; }
-.admin-cursor::-webkit-scrollbar-thumb { background: rgba(255,107,26,0.3); border-radius: 99px; }
+.admin-cursor::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 99px; }
 
 /* ── Bottom blur fade — masks bottom edge of page ─────────────── */
 .bottom-blur {
@@ -238,3 +238,9 @@ html::-webkit-scrollbar { display: none; }
     padding-top: 80px !important;
   }
 }
+/* Adnan's violet / electric-blue palette preserves the original cinematic layers. */
+:root { --accent: #a78bfa; --electric: #38bdf8; }
+.cinematic-grade { filter: hue-rotate(225deg) saturate(.8); }
+a:focus-visible,button:focus-visible { outline: 2px solid var(--electric); outline-offset: 6px; }
+.hero-perspective { text-shadow: 0 0 100px #a78bfa20; }
+@media(max-width:640px){ .hero-clamp-text{font-size:clamp(4rem,20vw,8rem)!important;} }

@@ -483,6 +483,7 @@ export default function CircularGallery({
 }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
+  const initialIndexRef = useRef(activeIndex);
   
   useEffect(() => {
     const app = new App(containerRef.current, {
@@ -492,8 +493,8 @@ export default function CircularGallery({
     appRef.current = app;
     
     // Initial scroll if activeIndex is provided
-    if (activeIndex !== undefined) {
-      app.scrollToIndex(activeIndex);
+    if (initialIndexRef.current !== undefined) {
+      app.scrollToIndex(initialIndexRef.current);
     }
     
     return () => {

@@ -82,7 +82,7 @@ export default function Navbar() {
         {/* Logo + back */}
         <div className="relative flex items-center gap-5">
           {pathname !== "/" && (
-            <Link href={getBackLink(pathname)} className="flex items-center gap-2 text-white/40 hover:text-[#ff6b1a] transition-colors duration-300 group">
+            <Link href={getBackLink(pathname)} className="flex items-center gap-2 text-white/40 hover:text-[#a78bfa] transition-colors duration-300 group">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="transition-transform duration-300 group-hover:-translate-x-1">
                 <path d="M11 14L6 9l5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -90,13 +90,7 @@ export default function Navbar() {
             </Link>
           )}
           <Link href="/" className="flex items-center hover:opacity-80 transition-opacity duration-300">
-            <Image
-              src="/photo/logo navbar inverse.png"
-              alt="Sarang — Portfolio Designer & Creative Developer"
-              width={120} height={40}
-              className="h-9 w-auto"
-              priority
-            />
+            <span className="font-black text-xl tracking-tighter">AA<span className="text-[#60a5fa]">.</span></span>
           </Link>
         </div>
 
@@ -106,7 +100,7 @@ export default function Navbar() {
             const active = pathname === href;
             return (
               <li key={href}>
-                <Link href={href} className={`px-4 py-2 transition-all duration-300 ${active ? "text-[#ff6b1a]" : "text-white/50 hover:text-white/80"}`}>
+                <Link href={href} className={`px-4 py-2 transition-all duration-300 ${active ? "text-[#a78bfa]" : "text-white/50 hover:text-white/80"}`}>
                   {label}
                 </Link>
               </li>
@@ -116,7 +110,7 @@ export default function Navbar() {
             <button 
               suppressHydrationWarning
               onClick={() => setIsContactOpen(true)}
-              className="px-5 py-2 bg-[#ff6b1a] text-black font-bold rounded-full hover:bg-white hover:text-black transition-colors duration-300 flex items-center gap-2"
+              className="px-5 py-2 bg-[#a78bfa] text-black font-bold rounded-full hover:bg-white hover:text-black transition-colors duration-300 flex items-center gap-2"
             >
               Start Now
             </button>
@@ -150,7 +144,7 @@ export default function Navbar() {
                   <Link
                     href={href}
                     onClick={() => setOpen(false)}
-                    className={`block text-4xl font-black tracking-tighter transition-colors duration-300 ${active ? "text-[#ff6b1a]" : "text-white/70 hover:text-white"}`}
+                    className={`block text-4xl font-black tracking-tighter transition-colors duration-300 ${active ? "text-[#a78bfa]" : "text-white/70 hover:text-white"}`}
                   >
                     {label}
                   </Link>
@@ -164,14 +158,14 @@ export default function Navbar() {
                    setOpen(false);
                    setIsContactOpen(true);
                  }}
-                 className="w-full py-4 bg-[#ff6b1a] text-black text-xl font-bold tracking-tight rounded-2xl hover:bg-white hover:text-black transition-colors duration-300"
+                 className="w-full py-4 bg-[#a78bfa] text-black text-xl font-bold tracking-tight rounded-2xl hover:bg-white hover:text-black transition-colors duration-300"
                >
                  Start Now
                </button>
             </li>
           </ul>
           <div className="mobile-nav-link mt-16 text-[10px] text-white/20 tracking-[0.4em] uppercase">
-            Sarang · Portfolio
+            Adnan Ardiansyah · Portfolio
           </div>
         </div>
       )}

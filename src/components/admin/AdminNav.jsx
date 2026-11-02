@@ -83,7 +83,7 @@ export default function AdminNav() {
         {/* Header container */}
         <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-baseline gap-2 overflow-hidden">
-            <Link href="/" className="text-[#ff6b1a] font-black text-xl tracking-tight">
+            <Link href="/" className="text-[#a78bfa] font-black text-xl tracking-tight">
               S<span className="sidebar-label">arang</span>
             </Link>
             <p className="text-white/25 text-[10px] uppercase tracking-widest sidebar-subtext">Admin</p>
@@ -108,7 +108,7 @@ export default function AdminNav() {
                 href={href} 
                 title={label}
                 className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                  active ? 'bg-[#ff6b1a]/10 text-[#ff6b1a]' : 'text-white/45 hover:text-white hover:bg-white/5'
+                  active ? 'bg-[#a78bfa]/10 text-[#a78bfa]' : 'text-white/45 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <div className="shrink-0">

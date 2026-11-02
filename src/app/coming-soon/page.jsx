@@ -77,8 +77,8 @@ export default function ComingSoonPage() {
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-5 py-16 text-center">
 
         {/* Name label */}
-        <p className="text-[9px] md:text-[10px] text-[#ff6b1a] tracking-[0.6em] uppercase font-bold mb-6 md:mb-10">
-          Sarang
+        <p className="text-[9px] md:text-[10px] text-[#a78bfa] tracking-[0.6em] uppercase font-bold mb-6 md:mb-10">
+          Adnan Ardiansyah
         </p>
 
         {/* Heading */}
@@ -100,8 +100,8 @@ export default function ComingSoonPage() {
 
         {/* Email form */}
         {emailStatus === "sent" ? (
-          <p className="text-[#ff6b1a] text-xs md:text-sm uppercase tracking-widest font-bold mb-8 md:mb-12">
-            You're on the list — see you soon.
+          <p className="text-[#a78bfa] text-xs md:text-sm uppercase tracking-widest font-bold mb-8 md:mb-12">
+            You&apos;re on the list — see you soon.
           </p>
         ) : (
           <form
@@ -114,12 +114,12 @@ export default function ComingSoonPage() {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 bg-white/8 border border-white/15 sm:border-r-0 rounded-full sm:rounded-r-none sm:rounded-l-full px-5 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors"
+              className="flex-1 bg-white/8 border border-white/15 sm:border-r-0 rounded-full sm:rounded-r-none sm:rounded-l-full px-5 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
             />
             <button
               type="submit"
               disabled={emailStatus === "sending"}
-              className="bg-[#ff6b1a] text-black font-bold px-6 py-3 rounded-full sm:rounded-l-none sm:rounded-r-full text-[10px] uppercase tracking-widest hover:bg-[#ff8c42] transition-colors disabled:opacity-60 whitespace-nowrap"
+              className="bg-[#a78bfa] text-black font-bold px-6 py-3 rounded-full sm:rounded-l-none sm:rounded-r-full text-[10px] uppercase tracking-widest hover:bg-[#60a5fa] transition-colors disabled:opacity-60 whitespace-nowrap"
             >
               {emailStatus === "sending" ? "…" : "Notify Me"}
             </button>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+import { verifyAdminToken } from '@/lib/admin-token';
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -7,11 +7,8 @@ export async function middleware(request) {
   // ── Admin auth ──────────────────────────────────────────────────────────────
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
     const token = request.cookies.get('admin_token')?.value;
-    if (!token) return NextResponse.redirect(new URL('/admin/login', request.url));
-    try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-      await jwtVerify(token, secret);
-    } catch {
+    if (!token || !process.env.JWT_SECRET) return NextResponse.redirect(new URL('/admin/login', request.url));
+    if (!(await verifyAdminToken(token))) {
       const res = NextResponse.redirect(new URL('/admin/login', request.url));
       res.cookies.delete('admin_token');
       return res;
@@ -32,29 +29,20 @@ export async function middleware(request) {
     pathname.startsWith('/_next') ||
     pathname.includes('.');
 
-  if (!skip) {
+  if (!skip && process.env.DATABASE_URL) {
     // Check bypass cookie first (avoids hitting DB on every request)
     const bypass = request.cookies.get('cs_bypass')?.value;
     const csPass = process.env.COMING_SOON_PASSWORD;
     if (!csPass || bypass !== csPass) {
-      // Hit Supabase REST directly (edge-compatible, no SDK needed)
+      // Read only the public gate setting; no database credential enters this request
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/settings?key=eq.coming_soon&select=value`,
-          {
-            headers: {
-              apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-              Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            cache: 'no-store',
-          }
-        );
-        const [row] = await res.json();
+        const res = await fetch(new URL('/api/settings?key=coming_soon', request.url), { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+        const row = await res.json();
         if (row?.value === true) {
           return NextResponse.redirect(new URL('/coming-soon', request.url));
         }
       } catch {
-        // If Supabase unreachable, don't block the site
+        // If database unreachable, don't block the site
       }
     }
   }

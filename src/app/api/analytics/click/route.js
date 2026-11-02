@@ -1,15 +1,9 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-
-export async function POST(request) {
-  try {
-    const { label, url, page } = await request.json();
-    if (!label) return NextResponse.json({ error: 'label required' }, { status: 400 });
-
-    await supabase.from('ad_clicks').insert([{ label, url: url || '', page: page || '' }]);
-
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
-  }
-}
+import { queryDatabase as sql } from '@/lib/neon';
+import { endpoint, json, text, url } from '@/lib/api';
+import { analyticsBody, page } from '@/lib/analytics';
+export const POST = endpoint(async request => {
+  const body = await analyticsBody(request);
+  const label = text(body.label, 300, true), link = body.url ? url(body.url, true) : '', path = page(body.page);
+  await sql`INSERT INTO portfolio.ad_clicks (label, url, page) VALUES (${label}, ${link}, ${path})`;
+  return json({ success: true });
+});

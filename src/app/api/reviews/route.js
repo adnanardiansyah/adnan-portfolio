@@ -1,40 +1,18 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { supabase } from '@/lib/supabase';
-
-async function isAdmin() {
-  const store = await cookies();
-  const token = store.get('admin_token')?.value;
-  if (!token) return false;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jwtVerify(token, secret);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const admin = await isAdmin();
-  
-  let query = supabase.from('reviews').select('*').order('created_at', { ascending: false });
-  if (!(searchParams.get('all') === 'true' && admin)) {
-    query = query.eq('approved', true);
-  }
-  
-  const { data: reviews } = await query;
-  const mappedReviews = (reviews || []).map(r => ({ ...r, _id: r.id, createdAt: r.created_at }));
-  return NextResponse.json(mappedReviews);
-}
-
-export async function POST(request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const body = await request.json();
-  const { data: review } = await supabase.from('reviews').insert([body]).select().single();
-  return NextResponse.json({ ...review, _id: review.id, createdAt: review.created_at }, { status: 201 });
-}
+import { endpoint, json, requireAdmin, isAdmin, bodyJson, id, ApiError } from '@/lib/api';
+import { listReviews, getReviews, createReviews, updateReviews, deleteReviews } from '@/lib/repository';
+import { validateRecord, mapReview } from '@/lib/records';
+export const GET = endpoint(async request => {
+  const params = new URL(request.url).searchParams;
+  const all = params.get('all') === 'true';
+  if (all) await requireAdmin(request);
+  const category = params.get('category');
+  if (category && category.length > 100) throw new ApiError(400, 'Invalid category');
+  const rows = await listReviews(all, category && category !== 'All' ? category : null);
+  return json(rows.map(mapReview));
+});
+export const POST = endpoint(async request => {
+  await requireAdmin(request);
+  const body = validateRecord('reviews', await bodyJson(request));
+  const row = await createReviews(body);
+  return json(mapReview(row), 201);
+});

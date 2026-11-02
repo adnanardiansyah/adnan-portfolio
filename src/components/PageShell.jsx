@@ -16,9 +16,10 @@ export default function PageShell({ children }) {
       wheelMultiplier: 1,
     });
     lenis.on("scroll", ScrollTrigger.update);
-    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    const tick = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
-    return () => lenis.destroy();
+    return () => { lenis.destroy(); gsap.ticker.remove(tick); };
   }, []);
 
   return (

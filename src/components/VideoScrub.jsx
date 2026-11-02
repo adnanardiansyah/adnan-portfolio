@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
+const SECTION_IMAGES = [
+    { id: null,              src: '/photo/hero.webp'    }, // default / hero
+    { id: 'about-section',  src: '/photo/about.webp'   },
+    { id: 'work-section',   src: '/photo/project.webp' },
+    { id: 'contact-section', src: '/photo/contact.webp' },
+  ];
+
 export default function VideoScrub() {
   const fwdRef = useRef(null);
   const revRef = useRef(null);
@@ -210,12 +217,7 @@ export default function VideoScrub() {
     };
   }, [isMobile, mounted]);
 
-  const SECTION_IMAGES = [
-    { id: null,              src: '/photo/hero.webp'    }, // default / hero
-    { id: 'about-section',  src: '/photo/about.webp'   },
-    { id: 'work-section',   src: '/photo/project.webp' },
-    { id: 'contact-section', src: '/photo/contact.webp' },
-  ];
+
 
   // Mobile scroll-driven state — updated directly via RAF, no React re-renders
   const mobileLayersRef = useRef([]); // refs to the bg divs, updated imperatively
@@ -311,7 +313,7 @@ export default function VideoScrub() {
     return (
       <div className="fixed inset-0 z-0 bg-[#0a0a0a]">
         <div 
-          className="absolute inset-0 w-full h-full opacity-60"
+          className="cinematic-grade absolute inset-0 w-full h-full opacity-60"
           style={{
             backgroundImage: "url('/photo/hero.webp')",
             backgroundSize: "cover",
@@ -325,7 +327,7 @@ export default function VideoScrub() {
     );
   }
 
-  const cls = "absolute inset-0 w-full h-full object-cover";
+  const cls = "cinematic-grade absolute inset-0 w-full h-full object-cover";
   const sty = { willChange: "transform", transform: "translateZ(0)" };
 
   // Phone: scroll-driven parallax swipe — image moves WITH finger in real time
@@ -340,7 +342,7 @@ export default function VideoScrub() {
               // Only eagerly load hero; others get src set lazily on first show
               if (el && i === 0) el.style.backgroundImage = `url(${sec.src})`;
             }}
-            className="absolute inset-0 w-full h-full"
+            className="cinematic-grade absolute inset-0 w-full h-full"
             data-bg={sec.src}
             style={{
               backgroundSize: 'cover',

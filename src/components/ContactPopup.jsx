@@ -10,6 +10,7 @@ import { COUNTRIES } from "@/app/contact/content";
 export default function ContactPopup({ isOpen, onClose }) {
   const [step, setStep]       = useState("choose");
   const [name, setName]       = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone]     = useState("");
   const [reason, setReason]   = useState("");
   const [status, setStatus]   = useState("idle"); // idle | sending | sent | error
@@ -20,7 +21,7 @@ export default function ContactPopup({ isOpen, onClose }) {
   // Reset on open
   useEffect(() => {
     if (isOpen) {
-      setStep("choose"); setName(""); setPhone(""); setReason(""); setStatus("idle");
+      setStep("choose"); setName(""); setEmail(""); setPhone(""); setReason(""); setStatus("idle");
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -37,7 +38,7 @@ export default function ContactPopup({ isOpen, onClose }) {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email: "", message: reason }),
+        body: JSON.stringify({ name, email, message: reason }),
       });
       setStatus(res.ok ? "sent" : "error");
     } catch { setStatus("error"); }
@@ -45,7 +46,8 @@ export default function ContactPopup({ isOpen, onClose }) {
 
   const handleWhatsApp = (e) => {
     e.preventDefault();
-    const num = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919999999999";
+    const num = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+    if (!num) { setStatus("error"); return; }
     const fullPhone = phone ? `+${selectedCC.code} ${phone}` : "(not provided)";
     const msg = encodeURIComponent(
       `Hi! My name is ${name}.\n\nMy number: ${fullPhone}\n\nReason: ${reason}`
@@ -54,7 +56,7 @@ export default function ContactPopup({ isOpen, onClose }) {
     onClose();
   };
 
-  const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-[#ff6b1a]/50 transition-colors duration-200 text-sm";
+  const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-[#a78bfa]/50 transition-colors duration-200 text-sm";
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -80,16 +82,17 @@ export default function ContactPopup({ isOpen, onClose }) {
         {/* ── STEP 1: Choose ── */}
         {step === "choose" && (
           <>
-            <h3 className="text-2xl md:text-3xl font-black text-white tracking-tighter mb-2 mt-1">Let's Talk.</h3>
+            <h3 className="text-2xl md:text-3xl font-black text-white tracking-tighter mb-2 mt-1">Let&apos;s Talk.</h3>
             <p className="text-white/35 text-sm mb-7 leading-relaxed">
               How would you like to reach out?
             </p>
             <div className="flex flex-col gap-3">
+              <a href="https://www.linkedin.com/in/adnanardiansyah/" target="_blank" rel="noopener noreferrer" className="text-[#60a5fa] underline underline-offset-4 mb-2">Connect on LinkedIn ↗</a>
               <button
                 onClick={() => setStep("email")}
-                className="flex items-center gap-4 bg-[#ff6b1a]/8 hover:bg-[#ff6b1a]/15 border border-[#ff6b1a]/20 p-4 rounded-2xl transition-all group text-left"
+                className="flex items-center gap-4 bg-[#a78bfa]/8 hover:bg-[#a78bfa]/15 border border-[#a78bfa]/20 p-4 rounded-2xl transition-all group text-left"
               >
-                <div className="w-11 h-11 rounded-full bg-[#ff6b1a]/15 text-[#ff6b1a] flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                <div className="w-11 h-11 rounded-full bg-[#a78bfa]/15 text-[#a78bfa] flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
                   <FiMail size={18} />
                 </div>
                 <div>
@@ -99,6 +102,7 @@ export default function ContactPopup({ isOpen, onClose }) {
               </button>
 
               <button
+                disabled={!process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}
                 onClick={() => setStep("whatsapp")}
                 className="flex items-center gap-4 bg-[#25D366]/8 hover:bg-[#25D366]/15 border border-[#25D366]/20 p-4 rounded-2xl transition-all group text-left"
               >
@@ -118,33 +122,34 @@ export default function ContactPopup({ isOpen, onClose }) {
         {step === "email" && (
           <>
             <div className="flex items-center gap-3 mb-6 mt-6">
-              <div className="w-9 h-9 rounded-full bg-[#ff6b1a]/15 text-[#ff6b1a] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-full bg-[#a78bfa]/15 text-[#a78bfa] flex items-center justify-center shrink-0">
                 <FiMail size={15} />
               </div>
               <div>
                 <h3 className="text-white font-black tracking-tight text-lg">Email Me</h3>
-                <p className="text-white/30 text-xs">I'll reply within 24 hours</p>
+                <p className="text-white/30 text-xs">I&apos;ll reply within 24 hours</p>
               </div>
             </div>
 
             {status === "sent" ? (
               <div className="flex flex-col items-center gap-3 py-8 text-center">
-                <div className="w-14 h-14 rounded-full bg-[#ff6b1a]/15 flex items-center justify-center">
-                  <FiCheck size={24} className="text-[#ff6b1a]" />
+                <div className="w-14 h-14 rounded-full bg-[#a78bfa]/15 flex items-center justify-center">
+                  <FiCheck size={24} className="text-[#a78bfa]" />
                 </div>
                 <p className="text-white font-bold">Message sent!</p>
-                <p className="text-white/35 text-sm">I'll get back to you soon.</p>
+                <p className="text-white/35 text-sm">I&apos;ll get back to you soon.</p>
               </div>
             ) : (
               <form onSubmit={handleEmail} className="flex flex-col gap-3">
                 <input suppressHydrationWarning className={inputCls} placeholder="Your name" required value={name} onChange={e => setName(e.target.value)} />
+                <input className={inputCls} type="email" placeholder="Your email" required value={email} onChange={e=>setEmail(e.target.value)} />
                 <textarea suppressHydrationWarning className={inputCls + " resize-none"} rows={4} placeholder="What's the project about?" required value={reason} onChange={e => setReason(e.target.value)} />
-                {status === "error" && <p className="text-red-400 text-xs">Something went wrong. Try again.</p>}
+                {status === "error" && <p className="text-red-400 text-xs">Form belum tersedia. Hubungi melalui LinkedIn.</p>}
                 <button
                   suppressHydrationWarning
                   type="submit"
                   disabled={status === "sending"}
-                  className="w-full py-3.5 bg-[#ff6b1a] text-black font-bold rounded-xl text-sm uppercase tracking-widest hover:bg-white transition-colors duration-300 disabled:opacity-50 flex items-center justify-center gap-2 mt-1"
+                  className="w-full py-3.5 bg-[#a78bfa] text-black font-bold rounded-xl text-sm uppercase tracking-widest hover:bg-white transition-colors duration-300 disabled:opacity-50 flex items-center justify-center gap-2 mt-1"
                 >
                   <FiSend size={14} />
                   {status === "sending" ? "Sending…" : "Send Message"}

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import './ProfileCard.css';
+import { assets } from '@/lib/assets';
 
 const DEFAULT_INNER_GRADIENT = 'linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)';
 
@@ -16,7 +17,8 @@ const round = (v, precision = 3) => parseFloat(v.toFixed(precision));
 const adjust = (v, fMin, fMax, tMin, tMax) => round(tMin + ((tMax - tMin) * (v - fMin)) / (fMax - fMin));
 
 const ProfileCardComponent = ({
-  avatarUrl = '/photo/about me.webp',
+  avatarUrl = assets.profile.src,
+  avatarIsPlaceholder = assets.profile.isPlaceholder,
   iconUrl = '',
   grainUrl = '',
   innerGradient,
@@ -28,11 +30,11 @@ const ProfileCardComponent = ({
   enableMobileTilt = false,
   mobileTiltSensitivity = 5,
   miniAvatarUrl,
-  name = 'Sarang',
-  title = 'Creative Developer & Designer',
-  handle = 'sarang',
-  status = 'Available for Hire',
-  contactText = 'Hire Me',
+  name = 'Adnan Ardiansyah',
+  title = 'Full-Stack & AI',
+  handle = 'adnanardiansyah',
+  status = 'Code. Intelligence. Connection.',
+  contactText = 'Connect',
   showUserInfo = true,
   onContactClick
 }) => {
@@ -294,7 +296,7 @@ const ProfileCardComponent = ({
       '--icon': iconUrl ? `url(${iconUrl})` : 'none',
       '--grain': grainUrl ? `url(${grainUrl})` : 'none',
       '--inner-gradient': innerGradient ?? DEFAULT_INNER_GRADIENT,
-      '--behind-glow-color': behindGlowColor ?? 'rgba(255, 107, 26, 0.4)', // Use Sarang's brand orange color as backing glow!
+      '--behind-glow-color': behindGlowColor ?? 'rgba(167, 139, 250, 0.4)', // Use Adnan Ardiansyah's brand orange color as backing glow!
       '--behind-glow-size': behindGlowSize ?? '50%'
     }),
     [iconUrl, grainUrl, innerGradient, behindGlowColor, behindGlowSize]
@@ -317,13 +319,14 @@ const ProfileCardComponent = ({
               <img
                 className="avatar"
                 src={avatarUrl}
-                alt={`${name || 'User'} avatar`}
+                alt={`${name || 'User'} — ${avatarIsPlaceholder ? 'portrait placeholder' : 'profile portrait'}`}
                 loading="lazy"
                 onError={e => {
                   const t = e.target;
                   t.style.display = 'none';
                 }}
               />
+              {avatarIsPlaceholder && <span className="pc-placeholder-label">Portrait placeholder</span>}
               {showUserInfo && (
                 <div className="pc-user-info">
                   <div className="pc-user-details">

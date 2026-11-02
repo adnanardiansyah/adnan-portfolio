@@ -3,6 +3,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { isRetiredProject } from "@/lib/profile";
+import ProjectCard from "@/components/ProjectCard";
 
 const CircularGallery = dynamic(
   () => import("@/components/CircularGallery/CircularGallery"),
@@ -31,7 +34,7 @@ function MagneticCTA({ href, children }) {
         ref.current.style.transform = `translate(${(e.clientX - b.left - b.width / 2) * 0.25}px,${(e.clientY - b.top - b.height / 2) * 0.25}px)`;
       }}
       onMouseLeave={() => { ref.current.style.transform = "translate(0,0)"; }}
-      className="inline-flex items-center gap-3 px-7 py-3.5 bg-[#ff6b1a] text-black font-black rounded-xl text-[10px] uppercase tracking-[0.25em] hover:bg-[#ff8c42] will-change-transform"
+      className="inline-flex items-center gap-3 px-7 py-3.5 bg-[#a78bfa] text-black font-black rounded-xl text-[10px] uppercase tracking-[0.25em] hover:bg-[#60a5fa] will-change-transform"
       style={{ transition: "transform 0.2s cubic-bezier(.23,1,.32,1), background-color 0.3s" }}
     >
       {children}
@@ -135,13 +138,13 @@ function ProjectShowcase({ items, startIdx, onClose }) {
 
             <motion.div className="flex items-center gap-3 mb-8"
               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-              <span className="text-[#ff6b1a] font-mono text-xs font-black tracking-[0.3em]">{String(idx + 1).padStart(2, "0")}</span>
+              <span className="text-[#a78bfa] font-mono text-xs font-black tracking-[0.3em]">{String(idx + 1).padStart(2, "0")}</span>
               <div className="w-10 h-px bg-white/10" />
               <span className="text-white/20 font-mono text-xs tracking-[0.3em]">{String(items.length).padStart(2, "0")}</span>
             </motion.div>
 
             <motion.span className="inline-block self-start px-3.5 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.4em] mb-5 border"
-              style={{ background: "rgba(255,107,26,0.08)", borderColor: "rgba(255,107,26,0.15)", color: "#ff6b1a" }}
+              style={{ background: "rgba(167,139,250,0.08)", borderColor: "rgba(167,139,250,0.15)", color: "#a78bfa" }}
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
               {current.category}
             </motion.span>
@@ -202,7 +205,7 @@ function ProjectShowcase({ items, startIdx, onClose }) {
           {items.map((_, i) => (
             <button key={i} onClick={() => go(i)} title={items[i]?.text} className="flex items-center justify-center">
               <motion.div className="rounded-full"
-                animate={{ width: i === idx ? 6 : 4, height: i === idx ? 18 : 4, backgroundColor: i === idx ? "#ff6b1a" : "rgba(255,255,255,0.12)" }}
+                animate={{ width: i === idx ? 6 : 4, height: i === idx ? 18 : 4, backgroundColor: i === idx ? "#a78bfa" : "rgba(255,255,255,0.12)" }}
                 transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1] }} />
             </button>
           ))}
@@ -246,6 +249,7 @@ export default function ProjectsPage() {
   const getInitialCategory = () => {
     if (!catParam) return "ALL";
     const c = catParam.toLowerCase();
+    if (c === "app") return "APP";
     if (c.includes("web") || c.includes("site")) return "WEBSITE";
     if (c.includes("design") || c.includes("poster") || c.includes("photo") || c.includes("pic")) return "DESIGNS";
     if (c.includes("video") || c.includes("motion") || c.includes("film") || c.includes("edit")) return "VIDEOS";
@@ -255,10 +259,10 @@ export default function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState(getInitialCategory());
 
   useEffect(() => {
-    fetch("/api/works")
+    fetch("/api/works", { cache: 'no-store' })
       .then((r) => r.ok ? r.json() : [])
       .then((data) => {
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           const normalizeCategory = (cat) => {
             const c = (cat || "").toLowerCase();
             if (c.includes("web") || c.includes("site")) return "Website";
@@ -267,9 +271,10 @@ export default function ProjectsPage() {
             if (c.includes("video") || c.includes("motion") || c.includes("film") || c.includes("edit")) return "Videos";
             return cat || "Website";
           };
-          const mapped = data.map((p) => ({
+          const mapped = data.filter(p => !isRetiredProject(p)).map((p) => ({
             id: p.id,
-            image: p.image_url || `https://picsum.photos/seed/${p.id}/800/600?grayscale`,
+            ...p,
+            image: p.image_url || '/images/projects/placeholder.svg',
             text: p.title,
             category: normalizeCategory(p.category),
             description: p.description,
@@ -314,7 +319,7 @@ export default function ProjectsPage() {
     }
   }, [filteredFull, allFull, router]);
 
-  const categories = ["ALL", "WEBSITE", "DESIGNS", "PHOTOS", "VIDEOS"];
+  const categories = ["ALL", "WEBSITE", "APP"];
 
   return (
     <>
@@ -347,8 +352,8 @@ export default function ProjectsPage() {
 
         {/* Heading — desktop only */}
         <div className="hidden md:block absolute top-0 left-0 px-6 md:px-20 pt-24 md:pt-28 pointer-events-none z-20">
-          <p className="font-sans text-[10px] text-[#ff6b1a] tracking-[0.5em] uppercase mb-2 md:mb-3 font-medium">
-            Creative
+          <p className="font-sans text-[10px] text-[#a78bfa] tracking-[0.5em] uppercase mb-2 md:mb-3 font-medium">
+            Selected projects
           </p>
           <h1
             className="font-sans font-black tracking-tighter text-white leading-none"
@@ -361,7 +366,7 @@ export default function ProjectsPage() {
         {/* Mobile: section title in top nav area */}
         <div className="md:hidden absolute top-0 left-0 right-0 px-6 pt-20 pointer-events-none z-20 flex items-center justify-between">
           <div>
-            <p className="text-[9px] text-[#ff6b1a] tracking-[0.4em] uppercase font-medium">Creative</p>
+            <p className="text-[9px] text-[#a78bfa] tracking-[0.4em] uppercase font-medium">Selected projects</p>
             <p className="text-white font-black tracking-tighter text-2xl leading-none">
               {activeCategory === "ALL" ? "Archive." : activeCategory.charAt(0) + activeCategory.slice(1).toLowerCase()}
             </p>
@@ -374,11 +379,11 @@ export default function ProjectsPage() {
             <button
               key={cat}
               onClick={() => handleCategoryClick(cat)}
-              className={`text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 relative ${activeCategory === cat ? "text-[#ff6b1a]" : "text-white/40 hover:text-white"}`}
+              className={`text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 relative ${activeCategory === cat ? "text-[#a78bfa]" : "text-white/40 hover:text-white"}`}
             >
               {cat}
               {activeCategory === cat && (
-                <motion.div layoutId="activeFilter" className="absolute -bottom-2 left-0 right-0 h-0.5 bg-[#ff6b1a]" />
+                <motion.div layoutId="activeFilter" className="absolute -bottom-2 left-0 right-0 h-0.5 bg-[#a78bfa]" />
               )}
             </button>
           ))}
@@ -392,12 +397,12 @@ export default function ProjectsPage() {
                 key={cat}
                 onClick={() => handleCategoryClick(cat)}
                 className={`text-[9px] uppercase tracking-[0.15em] font-bold transition-all duration-200 relative ${
-                  activeCategory === cat ? "text-[#ff6b1a]" : "text-white/35 hover:text-white"
+                  activeCategory === cat ? "text-[#a78bfa]" : "text-white/35 hover:text-white"
                 }`}
               >
                 {cat}
                 {activeCategory === cat && (
-                  <motion.div layoutId="activeFilterMobile" className="absolute -bottom-1.5 left-0 right-0 h-[1.5px] bg-[#ff6b1a]" />
+                  <motion.div layoutId="activeFilterMobile" className="absolute -bottom-1.5 left-0 right-0 h-[1.5px] bg-[#a78bfa]" />
                 )}
               </button>
             ))}
@@ -414,13 +419,24 @@ export default function ProjectsPage() {
             <motion.div
               animate={{ x: [-8, 8, -8] }}
               transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              className="w-1.5 h-1.5 bg-[#ff6b1a] rounded-full"
+              className="w-1.5 h-1.5 bg-[#a78bfa] rounded-full"
             />
           </div>
 
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="opacity-70">
             <path d="M5 12H19M19 12L12 19M19 12L12 5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
+        </div>
+      </section>
+      <section aria-label="Project index" className="relative z-20 px-6 md:px-20 py-16 md:py-24 bg-gradient-to-b from-transparent to-[#090811]">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-10">
+            <div><p className="text-[10px] tracking-[0.35em] uppercase text-[#a78bfa] mb-3">Explore the work</p><h2 className="text-3xl md:text-5xl font-bold tracking-tighter">Selected projects.</h2></div>
+            <p className="text-sm text-white/45 max-w-xs leading-relaxed">Project details and published links, with a clear place for each preview.</p>
+          </div>
+          <div className="grid gap-5 md:gap-6 sm:grid-cols-2">
+            {(filteredFull || []).map((p, index) => <ProjectCard key={p.id} project={p} index={index} />)}
+          </div>
         </div>
       </section>
 

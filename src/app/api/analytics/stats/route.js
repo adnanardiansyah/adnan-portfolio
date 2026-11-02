@@ -1,8 +1,5 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { supabase } from '@/lib/supabase';
-
+import { queryDatabase as sql } from '@/lib/neon';
+import { endpoint, json, requireAdmin, ApiError } from '@/lib/api';
 const AI_SOURCE_SET = new Set(['ChatGPT', 'Gemini', 'Claude', 'Perplexity', 'Copilot', 'Grok', 'Meta AI', 'You.com']);
 
 const SOURCE_PARAM_MAP = {
@@ -71,163 +68,29 @@ function parseSource(referrer) {
   }
 }
 
-async function isAdmin() {
-  const store = await cookies();
-  const token = store.get('admin_token')?.value;
-  if (!token) return false;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jwtVerify(token, secret);
-    return true;
-  } catch { return false; }
-}
-
-export async function GET(request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(request.url);
-  const monthStr = searchParams.get('month');
-  const yearStr = searchParams.get('year');
-
-  let filterStart = null;
-  let filterEnd = null;
-
-  if (yearStr) {
-    const y = parseInt(yearStr, 10);
-    if (monthStr) {
-      const m = parseInt(monthStr, 10) - 1; // 0-indexed
-      filterStart = new Date(y, m, 1).toISOString();
-      filterEnd = new Date(y, m + 1, 1).toISOString();
-    } else {
-      filterStart = new Date(y, 0, 1).toISOString();
-      filterEnd = new Date(y + 1, 0, 1).toISOString();
-    }
-  }
-
-  const todayStart    = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const sevenDaysAgo  = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const fiveMinsAgo   = new Date(); fiveMinsAgo.setMinutes(fiveMinsAgo.getMinutes() - 5);
-
-  let totalVisitsQuery = supabase.from('visits').select('*', { count: 'exact', head: true });
-  let totalClicksQuery = supabase.from('ad_clicks').select('*', { count: 'exact', head: true });
-  let totalReviewsQuery = supabase.from('reviews').select('*', { count: 'exact', head: true });
-  let recentVisitsQuery = supabase.from('visits').select('*').order('created_at', { ascending: false }).limit(50);
-  let allClicksQuery = supabase.from('ad_clicks').select('*').order('created_at', { ascending: false });
-  let allVisitsQuery = supabase.from('visits').select('*');
-
-  if (filterStart && filterEnd) {
-    totalVisitsQuery = totalVisitsQuery.gte('created_at', filterStart).lt('created_at', filterEnd);
-    totalClicksQuery = totalClicksQuery.gte('created_at', filterStart).lt('created_at', filterEnd);
-    totalReviewsQuery = totalReviewsQuery.gte('created_at', filterStart).lt('created_at', filterEnd);
-    recentVisitsQuery = recentVisitsQuery.gte('created_at', filterStart).lt('created_at', filterEnd);
-    allClicksQuery = allClicksQuery.gte('created_at', filterStart).lt('created_at', filterEnd);
-    allVisitsQuery = allVisitsQuery.gte('created_at', filterStart).lt('created_at', filterEnd);
-  }
-
-  const [
-    { count: totalVisits },
-    { count: todayVisits },
-    { count: totalClicks },
-    { count: totalReviews },
-    { count: activeUsers },
-    { data: topSearches },
-    { data: recentVisits },
-    { data: allClicks },
-    { data: allVisits },
-    { data: weekVisits },
-  ] = await Promise.all([
-    totalVisitsQuery,
-    supabase.from('visits').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
-    totalClicksQuery,
-    totalReviewsQuery,
-    supabase.from('visits').select('*', { count: 'exact', head: true }).gte('created_at', fiveMinsAgo.toISOString()),
-    supabase.from('searches').select('*').order('count', { ascending: false }).limit(10),
-    recentVisitsQuery,
-    allClicksQuery,
-    allVisitsQuery,
-    supabase.from('visits').select('created_at').gte('created_at', sevenDaysAgo.toISOString()),
+export const GET = endpoint(async request => {
+  await requireAdmin(request);
+  const params = new URL(request.url).searchParams, year = params.get('year'), month = params.get('month');
+  if ((year && (!/^\d{4}$/.test(year) || +year < 2000 || +year > 2200)) || (month && (!year || !/^(?:[1-9]|1[0-2])$/.test(month)))) throw new ApiError(400, 'Invalid date filter');
+  const start = year ? new Date(Date.UTC(+year, month ? +month - 1 : 0, 1)).toISOString() : null;
+  const end = year ? new Date(Date.UTC(+year + (month ? 0 : 1), month ? +month : 0, 1)).toISOString() : null;
+  const [counts, clicksByLabel, visitsByPage, sources, visitsByCountry, recentVisits, topSearches, visitsPerDay] = await Promise.all([
+    sql`SELECT
+      (SELECT count(*)::integer FROM portfolio.visits WHERE (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz)) AS "totalVisits",
+      (SELECT count(*)::integer FROM portfolio.visits WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC') AS "todayVisits",
+      (SELECT count(*)::integer FROM portfolio.ad_clicks WHERE (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz)) AS "totalClicks",
+      (SELECT count(*)::integer FROM portfolio.reviews WHERE (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz)) AS "totalReviews",
+      (SELECT count(*)::integer FROM portfolio.active_sessions WHERE last_seen > now() - interval '60 seconds') AS "activeUsers"`,
+    sql`SELECT label AS _id, count(*)::integer AS count, max(url) AS url FROM portfolio.ad_clicks WHERE (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz) GROUP BY label ORDER BY count DESC LIMIT 10`,
+    sql`SELECT page AS _id, count(*)::integer AS count FROM portfolio.visits WHERE (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz) GROUP BY page ORDER BY count DESC`,
+    sql`SELECT source, referrer, useragent, count(*)::integer AS count FROM portfolio.visits WHERE (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz) GROUP BY source, referrer, useragent`,
+    sql`SELECT country, count(*)::integer AS count FROM portfolio.visits WHERE country <> '' AND (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz) GROUP BY country ORDER BY count DESC LIMIT 15`,
+    sql`SELECT * FROM portfolio.visits WHERE (${start}::timestamptz IS NULL OR created_at >= ${start}::timestamptz) AND (${end}::timestamptz IS NULL OR created_at < ${end}::timestamptz) ORDER BY created_at DESC LIMIT 50`,
+    sql`SELECT query, count::integer, last_searched FROM portfolio.searches ORDER BY count DESC LIMIT 10`,
+    sql`SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS _id, count(*)::integer AS count FROM portfolio.visits WHERE created_at >= now() - interval '7 days' GROUP BY 1 ORDER BY 1`,
   ]);
-
-  // ── Link clicks ───────────────────────────────────────────────────────────
-  const clicksByLabelMap = {};
-  (allClicks || []).forEach(c => {
-    if (!clicksByLabelMap[c.label]) clicksByLabelMap[c.label] = { _id: c.label, count: 0, url: c.url };
-    clicksByLabelMap[c.label].count++;
-  });
-  const clicksByLabel = Object.values(clicksByLabelMap).sort((a, b) => b.count - a.count).slice(0, 10);
-
-  // ── Visits by page ────────────────────────────────────────────────────────
-  const visitsByPageMap = {};
-  (allVisits || []).forEach(v => {
-    const p = v.page || '/';
-    if (!visitsByPageMap[p]) visitsByPageMap[p] = { _id: p, count: 0 };
-    visitsByPageMap[p].count++;
-  });
-  const visitsByPage = Object.values(visitsByPageMap).sort((a, b) => b.count - a.count);
-
-  // ── Traffic sources ───────────────────────────────────────────────────────
-  const visitsBySourceMap = {};
-  (allVisits || []).forEach(v => {
-    const src = resolveSource(v.source, v.referrer, v.useragent);
-    visitsBySourceMap[src] = (visitsBySourceMap[src] || 0) + 1;
-  });
-  const visitsBySource = Object.entries(visitsBySourceMap)
-    .map(([source, count]) => ({ source, count }))
-    .sort((a, b) => b.count - a.count);
-
-  // ── AI traffic ────────────────────────────────────────────────────────────
-  const aiVisits = visitsBySource.filter(v => AI_SOURCE_SET.has(v.source));
-
-  // ── Visits per day (last 7) ───────────────────────────────────────────────
-  const visitsPerDayMap = {};
-  (weekVisits || []).forEach(v => {
-    const d = v.created_at.split('T')[0];
-    if (!visitsPerDayMap[d]) visitsPerDayMap[d] = { _id: d, count: 0 };
-    visitsPerDayMap[d].count++;
-  });
-  const visitsPerDay = Object.values(visitsPerDayMap).sort((a, b) => a._id.localeCompare(b._id));
-
-  // ── Country breakdown ─────────────────────────────────────────────────────
-  const countryMap = {};
-  (recentVisits || []).forEach(v => {
-    const c = v.country || '';
-    if (!c) return;
-    countryMap[c] = (countryMap[c] || 0) + 1;
-  });
-
-  // Also count from allVisits if they have country
-  (allVisits || []).forEach(v => {
-    if (v.country) {
-      countryMap[v.country] = (countryMap[v.country] || 0) + 1;
-    }
-  });
-
-  const visitsByCountry = Object.entries(countryMap)
-    .map(([country, count]) => ({ country, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 15);
-
-  // ── Recent visits ─────────────────────────────────────────────────────────
-  const mappedRecentVisits = (recentVisits || []).map(v => ({
-    ...v,
-    createdAt: v.created_at,
-  }));
-
-  return NextResponse.json({
-    totalVisits:    totalVisits    || 0,
-    todayVisits:    todayVisits    || 0,
-    totalClicks:    totalClicks    || 0,
-    totalReviews:   totalReviews   || 0,
-    activeUsers:    activeUsers    || 0,
-    topSearches:    topSearches    || [],
-    recentVisits:   mappedRecentVisits,
-    clicksByLabel,
-    visitsByPage,
-    visitsBySource,
-    aiVisits,
-    visitsPerDay,
-    visitsByCountry,
-  });
-}
+  const sourceCounts = new Map();
+  for (const row of sources) { const source = resolveSource(row.source, row.referrer, row.useragent); sourceCounts.set(source, (sourceCounts.get(source) || 0) + row.count); }
+  const visitsBySource = [...sourceCounts].map(([source, count]) => ({ source, count })).sort((a,b) => b.count - a.count);
+  return json({ ...counts[0], clicksByLabel, visitsByPage, visitsBySource, aiVisits: visitsBySource.filter(row => AI_SOURCE_SET.has(row.source)), visitsByCountry, recentVisits: recentVisits.map(row => ({ ...row, createdAt: row.created_at })), topSearches, visitsPerDay });
+});

@@ -1,49 +1,23 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-
-export async function POST(request) {
+import { Resend } from 'resend';
+import { queryDatabase as sql } from '@/lib/neon';
+import { endpoint, json, ApiError, text, email } from '@/lib/api';
+export const POST = endpoint(async request => {
+  if (!process.env.RESEND_API_KEY || !process.env.RESEND_WEBHOOK_SECRET) throw new ApiError(503, 'Email webhook is not configured');
+  const payload = await request.text();
+  if (new TextEncoder().encode(payload).length > 200000) throw new ApiError(413, 'Request too large');
+  let event;
   try {
-    const body = await request.json();
-
-    // Verify it's an incoming email webhook from Resend
-    if (body.type !== 'email.received') {
-      return NextResponse.json({ error: 'Ignored: Not an email.received event' }, { status: 400 });
-    }
-
-    const { from, subject, text, html } = body.data;
-
-    // Parse the sender's name and email
-    // "from" usually looks like: "John Doe <john@example.com>" or just "john@example.com"
-    let name = 'Unknown Sender';
-    let email = from;
-
-    const match = from.match(/(.*)<(.*)>/);
-    if (match) {
-      name = match[1].trim().replace(/^"|"$/g, '') || 'Unknown Sender'; // Remove quotes if any
-      email = match[2].trim();
-    }
-
-    // Prepare the message text (use plain text if available, fallback to html)
-    let messageBody = text || html || '[No content]';
-    
-    // Add the subject line to the top of the message so the admin has context
-    const fullMessage = `SUBJECT: ${subject || 'No Subject'}\n\n${messageBody}`;
-
-    // Insert the received email into the inquiries table so it appears in the Admin Panel
-    const { error } = await supabase.from('inquiries').insert([{ 
-      name, 
-      email, 
-      message: fullMessage 
-    }]);
-
-    if (error) {
-      console.error('Webhook Supabase insert error:', error);
-      return NextResponse.json({ error: 'Database insert failed' }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('Webhook processing error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
+    event = new Resend(process.env.RESEND_API_KEY).webhooks.verify({ payload,
+      headers: { id: request.headers.get('svix-id'), timestamp: request.headers.get('svix-timestamp'), signature: request.headers.get('svix-signature') }, webhookSecret: process.env.RESEND_WEBHOOK_SECRET });
+  } catch { throw new ApiError(401, 'Invalid webhook signature'); }
+  if (event.type !== 'email.received') return json({ success: true, ignored: true });
+  const sender = text(event.data?.from, 1000, true);
+  const match = sender.match(/^(.*)<([^<>]+)>$/);
+  const name = (match?.[1]?.trim().replace(/^"|"$/g, '') || sender).slice(0, 150);
+  const address = email(match ? match[2] : sender);
+  const message = 'SUBJECT: ' + text(event.data?.subject || 'No Subject', 1000) + '\n\n' + text(event.data?.text || event.data?.html || '[No content]', 100000);
+  const key = '_webhook:' + text(request.headers.get('svix-id'), 200, true);
+  await sql`WITH marker AS (INSERT INTO portfolio.settings (key, value) VALUES (${key}, 'true'::jsonb) ON CONFLICT (key) DO NOTHING RETURNING key)
+    INSERT INTO portfolio.inquiries (name, email, message) SELECT ${name}, ${address}, ${message} FROM marker`;
+  return json({ success: true });
+});

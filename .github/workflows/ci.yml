@@ -1,0 +1,72 @@
+name: Portfolio CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Next.js checks (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # CI runs without service credentials. Tests use isolated transport stubs;
+    # builds must work without connecting to Neon, Blob, or Resend.
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      DATABASE_URL: ''
+      MONGODB_URI: ''
+      NEXT_PUBLIC_SUPABASE_URL: ''
+      SUPABASE_SERVICE_ROLE_KEY: ''
+      ADMIN_PASSWORD: ''
+      JWT_SECRET: ''
+      BLOB_READ_WRITE_TOKEN: ''
+      BLOB_PUBLIC_HOSTNAME: ''
+      RESEND_API_KEY: ''
+      RESEND_FROM_EMAIL: ''
+      RESEND_WEBHOOK_SECRET: ''
+      ADMIN_EMAIL: ''
+      COMING_SOON_PASSWORD: ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Reject private environment files in checkout
+        shell: bash
+        run: |
+          if find . -path './.git' -prune -o -type f -name '.env*' ! -name '.env.example' -print -quit | grep -q .; then
+            echo 'Private environment file found in checkout. CI stopped.'
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Production build
+        run: npm run build
